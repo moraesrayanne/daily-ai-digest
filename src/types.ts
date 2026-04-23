@@ -7,6 +7,7 @@ export interface Article {
   views: number;
   comments: number;
   summary?: string;
+  translatedTitle?: string;
   score?: number;
 }
 

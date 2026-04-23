@@ -42,7 +42,7 @@ function articleCard(article: Article, index: number): string {
                     </td>
                     <td valign="top">
                       <div style="margin-bottom:6px;">${sourceBadge(article.source)}</div>
-                      <div style="font-family:Georgia,'Times New Roman',serif;font-size:17px;line-height:1.4;color:#1C1917;margin-bottom:8px;letter-spacing:-0.01em;">${article.title}</div>
+                      <div style="font-family:Georgia,'Times New Roman',serif;font-size:17px;line-height:1.4;color:#1C1917;margin-bottom:8px;letter-spacing:-0.01em;">${article.translatedTitle ?? article.title}</div>
                       ${summary}
                       <a href="${article.url}" style="display:inline-block;padding:6px 14px;background:#FEF1EC;border:1px solid #F5C9B3;border-radius:7px;font-family:system-ui,sans-serif;font-size:12px;font-weight:600;color:#D97757;text-decoration:none;letter-spacing:0.01em;">Ler artigo →</a>
                     </td>
@@ -194,7 +194,7 @@ export function buildEmailText(articles: Article[]): string {
     '─'.repeat(40),
     '',
     ...articles.map((a, i) =>
-      `${i + 1}. [${a.source}] ${a.title}\n   ${a.summary ?? ''}\n   ${a.url}`
+      `${i + 1}. [${a.source}] ${a.translatedTitle ?? a.title}\n   ${a.summary ?? ''}\n   ${a.url}`
     ),
     '',
     '─'.repeat(40),

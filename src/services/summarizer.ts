@@ -10,13 +10,30 @@ let dailyQuotaExhausted = false;
 function buildPrompt(article: Article): string {
   return (
     `Você é um assistente que resume artigos de tecnologia em tom ${aiStyle.tone}, em ${aiStyle.language}.\n` +
-    `Escreva exatamente 2 linhas resumindo o artigo abaixo. Sem preâmbulo, sem bullet points:\n\n` +
-    `Título: ${article.title}\nURL: ${article.url}`
+    `Responda APENAS com um JSON válido, sem markdown, sem explicações:\n` +
+    `{"title": "<título traduzido para português>", "summary": "<resumo em exatamente 2 linhas>"}\n\n` +
+    `Título original: ${article.title}\nURL: ${article.url}`
   );
 }
 
-function fallback(_article: Article): string {
-  return 'Resumo indisponível no momento. Clique para ler o artigo completo.';
+interface SummaryResult {
+  title: string;
+  summary: string;
+}
+
+function parseResult(text: string, article: Article): SummaryResult {
+  try {
+    const json = text.match(/\{[\s\S]*\}/)?.[0];
+    if (json) {
+      const parsed = JSON.parse(json);
+      if (parsed.title && parsed.summary) return parsed;
+    }
+  } catch { /* fallback below */ }
+  return { title: article.title, summary: text.trim() };
+}
+
+function fallback(_article: Article): SummaryResult {
+  return { title: _article.title, summary: 'Resumo indisponível no momento. Clique para ler o artigo completo.' };
 }
 
 function sleep(ms: number) {
@@ -39,19 +56,19 @@ function retryDelayMs(err: unknown): number {
   return isNaN(seconds) ? 60_000 : seconds * 1000 + 1000;
 }
 
-export async function summarize(article: Article): Promise<string> {
+export async function summarize(article: Article): Promise<SummaryResult> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey || process.env.SKIP_SUMMARIZE === 'true' || dailyQuotaExhausted) {
     return fallback(article);
   }
 
   const genAI = new GoogleGenerativeAI(apiKey);
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+  const model = genAI.getGenerativeModel({ model: 'gemma-3-27b-it' });
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
       const result = await model.generateContent(buildPrompt(article));
-      return result.response.text().trim();
+      return parseResult(result.response.text().trim(), article);
     } catch (err) {
       const status = (err as any)?.status;
 
@@ -61,9 +78,9 @@ export async function summarize(article: Article): Promise<string> {
         return fallback(article);
       }
 
-      if (status === 429 && attempt < MAX_RETRIES) {
-        const wait = retryDelayMs(err);
-        console.warn(`[summarizer] rate limited — waiting ${Math.round(wait / 1000)}s (attempt ${attempt}/${MAX_RETRIES})`);
+      if ((status === 429 || status === 503) && attempt < MAX_RETRIES) {
+        const wait = status === 503 ? 10_000 : retryDelayMs(err);
+        console.warn(`[summarizer] ${status} error — waiting ${Math.round(wait / 1000)}s (attempt ${attempt}/${MAX_RETRIES})`);
         await sleep(wait);
         continue;
       }
@@ -79,8 +96,8 @@ export async function summarize(article: Article): Promise<string> {
 export async function summarizeAll(articles: Article[]): Promise<Article[]> {
   const result: Article[] = [];
   for (let i = 0; i < articles.length; i++) {
-    const summary = await summarize(articles[i]);
-    result.push({ ...articles[i], summary });
+    const { title, summary } = await summarize(articles[i]);
+    result.push({ ...articles[i], translatedTitle: title, summary });
     if (i < articles.length - 1 && !dailyQuotaExhausted) await sleep(DELAY_BETWEEN_MS);
   }
   return result;
