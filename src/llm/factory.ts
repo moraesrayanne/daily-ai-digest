@@ -1,21 +1,24 @@
 import { LLMProvider } from './types';
 import { GeminiProvider } from './providers/gemini';
-import { OpenAIProvider } from './providers/openai';
-import { ClaudeProvider } from './providers/claude';
-import llmConfig from '../../config/llm.json';
 
 let instance: LLMProvider | null = null;
+
+const providers: Record<string, () => LLMProvider> = {
+  gemini: () => new GeminiProvider(),
+};
 
 export function getLLMProvider(): LLMProvider {
   if (instance) return instance;
 
-  const active = llmConfig.active;
+  const active = process.env.LLM_PROVIDER ?? 'gemini';
+  const factory = providers[active];
 
-  if (active === 'gemini') { instance = new GeminiProvider(); return instance; }
-  if (active === 'openai') { instance = new OpenAIProvider(); return instance; }
-  if (active === 'claude') { instance = new ClaudeProvider(); return instance; }
+  if (!factory) {
+    throw new Error(`[llm/factory] Unknown LLM provider: "${active}". Available: ${Object.keys(providers).join(', ')}.`);
+  }
 
-  throw new Error(`[llm/factory] Unknown LLM provider: "${active}". Check config/llm.json.`);
+  instance = factory();
+  return instance;
 }
 
 export function _resetProviderForTest(): void {
