@@ -3,7 +3,8 @@
     { "name": "devto",      "enabled": true },
     { "name": "hackernews", "enabled": true },
     { "name": "arxiv",      "enabled": true },
-    { "name": "rss",        "enabled": true }
+    { "name": "rss",        "enabled": true },
+    { "name": "anthropic",  "enabled": true }
   ],
   "rssFeeds": [
     { "name": "OpenAI",        "url": "https://openai.com/news/rss.xml" },
