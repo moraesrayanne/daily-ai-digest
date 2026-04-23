@@ -6,11 +6,12 @@
     { "name": "rss",        "enabled": true }
   ],
   "rssFeeds": [
-    { "name": "Anthropic",      "url": "https://www.anthropic.com/rss.xml" },
-    { "name": "OpenAI",         "url": "https://openai.com/news/rss.xml" },
+    { "name": "OpenAI",        "url": "https://openai.com/news/rss.xml" },
     { "name": "Google DeepMind","url": "https://deepmind.google/blog/rss.xml" },
-    { "name": "The Verge AI",   "url": "https://www.theverge.com/rss/ai-artificial-intelligence/index.xml" },
-    { "name": "TechCrunch AI",  "url": "https://techcrunch.com/category/artificial-intelligence/feed/" },
-    { "name": "Cursor",         "url": "https://www.cursor.com/blog/rss.xml" }
+    { "name": "The Verge AI",  "url": "https://www.theverge.com/rss/ai-artificial-intelligence/index.xml" },
+    { "name": "TechCrunch AI", "url": "https://techcrunch.com/category/artificial-intelligence/feed/" },
+    { "name": "VentureBeat AI","url": "https://venturebeat.com/category/ai/feed/" },
+    { "name": "MIT Tech Review","url": "https://www.technologyreview.com/feed/" },
+    { "name": "Ars Technica",  "url": "https://feeds.arstechnica.com/arstechnica/technology-lab" }
   ]
 }

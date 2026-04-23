@@ -18,6 +18,15 @@ interface RssItem {
   id?: string[];
 }
 
+function parseTitle(raw: unknown): string {
+  if (!raw) return '';
+  // Plain string
+  if (typeof raw === 'string') return raw.replace(/<[^>]+>/g, '').trim();
+  // Atom: { _: 'text', $: { type: 'html' } }
+  if (typeof raw === 'object' && (raw as any)._) return String((raw as any)._).replace(/<[^>]+>/g, '').trim();
+  return String(raw).replace(/<[^>]+>/g, '').trim();
+}
+
 function parseDate(item: RssItem): Date {
   const raw =
     item.pubDate?.[0] ??
@@ -56,7 +65,7 @@ async function fetchFeed(feed: RssFeed, index: number): Promise<Article[]> {
 
     return items.slice(0, 10).map((item, i): Article => ({
       id: `rss-${index}-${i}-${Date.now()}`,
-      title: (item.title?.[0] ?? '').replace(/<[^>]+>/g, '').trim(),
+      title: parseTitle(item.title?.[0]),
       url: parseLink(item),
       source: feed.name,
       publishedAt: parseDate(item),
