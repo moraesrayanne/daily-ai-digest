@@ -1,0 +1,7 @@
+{
+  "sources": [
+    { "name": "devto", "enabled": true },
+    { "name": "hackernews", "enabled": true },
+    { "name": "arxiv", "enabled": true }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "providers": [
+    { "name": "gemini", "active": true },
+    { "name": "openai", "active": false },
+    { "name": "claude", "active": false }
+  ],
+  "active": "gemini"
+}
