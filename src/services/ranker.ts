@@ -20,12 +20,19 @@ function recencyScore(publishedAt: Date, now: Date): number {
   return 1.0 - (ageH - 12) / 12;
 }
 
-function relevanceScore(title: string): number {
+// Sources whose content is already curated — always high signal
+const PREMIUM_SOURCES = new Set([
+  'Anthropic', 'OpenAI', 'Google DeepMind', 'Cursor',
+  'The Verge AI', 'TechCrunch AI',
+]);
+
+function relevanceScore(title: string, source: string): number {
   let score = 0;
-  if (TIER1.test(title))     score += 0.35;
-  if (TIER2.test(title))     score += 0.2;
-  if (TIER3.test(title))     score += 0.1;
-  if (LOW_VALUE.test(title)) score -= 0.2;
+  if (PREMIUM_SOURCES.has(source)) score += 0.5; // premium source bonus
+  if (TIER1.test(title))           score += 0.35;
+  if (TIER2.test(title))           score += 0.2;
+  if (TIER3.test(title))           score += 0.1;
+  if (LOW_VALUE.test(title))       score -= 0.2;
   return Math.max(0, Math.min(score, 1.0));
 }
 
@@ -38,7 +45,7 @@ export function rank(articles: Article[], now: Date = new Date()): Article[] {
   const scored = articles.map((article) => {
     const recency = recencyScore(article.publishedAt, now);
     const trending = maxTrending > 0 ? (article.views + article.comments) / maxTrending : 0;
-    const relevance = relevanceScore(article.title);
+    const relevance = relevanceScore(article.title, article.source);
     const score = recency * 0.3 + trending * 0.4 + relevance * 0.3;
     return { ...article, score };
   });

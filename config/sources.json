@@ -1,7 +1,16 @@
 {
   "sources": [
-    { "name": "devto", "enabled": true },
+    { "name": "devto",      "enabled": true },
     { "name": "hackernews", "enabled": true },
-    { "name": "arxiv", "enabled": true }
+    { "name": "arxiv",      "enabled": true },
+    { "name": "rss",        "enabled": true }
+  ],
+  "rssFeeds": [
+    { "name": "Anthropic",      "url": "https://www.anthropic.com/rss.xml" },
+    { "name": "OpenAI",         "url": "https://openai.com/news/rss.xml" },
+    { "name": "Google DeepMind","url": "https://deepmind.google/blog/rss.xml" },
+    { "name": "The Verge AI",   "url": "https://www.theverge.com/rss/ai-artificial-intelligence/index.xml" },
+    { "name": "TechCrunch AI",  "url": "https://techcrunch.com/category/artificial-intelligence/feed/" },
+    { "name": "Cursor",         "url": "https://www.cursor.com/blog/rss.xml" }
   ]
 }

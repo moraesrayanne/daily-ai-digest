@@ -2,14 +2,16 @@ import { Article } from '../types';
 import { fetchArticles as fetchDevTo } from '../adapters/devto';
 import { fetchArticles as fetchHackerNews } from '../adapters/hackernews';
 import { fetchArticles as fetchArXiv } from '../adapters/arxiv';
+import { fetchArticles as fetchRSS } from '../adapters/rss';
 import sourcesConfig from '../../config/sources.json';
 
-type AdapterName = 'devto' | 'hackernews' | 'arxiv';
+type AdapterName = 'devto' | 'hackernews' | 'arxiv' | 'rss';
 
 const adapters: Record<AdapterName, () => Promise<Article[]>> = {
   devto: fetchDevTo,
   hackernews: fetchHackerNews,
   arxiv: fetchArXiv,
+  rss: fetchRSS,
 };
 
 export async function aggregate(): Promise<Article[]> {
