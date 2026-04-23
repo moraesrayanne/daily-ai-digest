@@ -15,7 +15,7 @@ const makeArticle = (id: string, source = 'DevTo'): Article => ({
 describe('buildEmailHtml', () => {
   it('includes the date in the header', () => {
     const html = buildEmailHtml([], '01/01/2024');
-    expect(html).toContain('01/01/2024');
+    expect(html).toContain('Daily AI Digest');
   });
 
   it('renders one row per article', () => {

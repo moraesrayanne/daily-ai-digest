@@ -38,39 +38,41 @@ describe('summarize', () => {
     expect(result).toBe('Resumo gerado pelo Gemini.');
   });
 
-  it('falls back to title slice when no API key', async () => {
+  it('falls back to placeholder when no API key', async () => {
     delete process.env.GEMINI_API_KEY;
-    const article = makeArticle('2');
-    const result = await summarize(article);
-    expect(result).toBe(article.title.slice(0, 300));
+    const result = await summarize(makeArticle('2'));
+    expect(result).toContain('Resumo indisponível');
   });
 
-  it('falls back to title slice when Gemini throws', async () => {
+  it('falls back to placeholder when Gemini throws', async () => {
     const { GoogleGenerativeAI } = jest.requireMock('@google/generative-ai');
     GoogleGenerativeAI.mockImplementationOnce(() => ({
       getGenerativeModel: jest.fn().mockReturnValue({
         generateContent: jest.fn().mockRejectedValue(new Error('API error')),
       }),
     }));
-    const article = makeArticle('3');
-    const result = await summarize(article);
-    expect(result).toBe(article.title.slice(0, 300));
+    const result = await summarize(makeArticle('3'));
+    expect(result).toContain('Resumo indisponível');
   });
 });
 
 describe('summarizeAll', () => {
   beforeEach(() => {
     process.env.GEMINI_API_KEY = 'test-key';
+    jest.useFakeTimers();
   });
 
   afterEach(() => {
     delete process.env.GEMINI_API_KEY;
+    jest.useRealTimers();
     jest.clearAllMocks();
   });
 
   it('runs sequentially and attaches summary to each article', async () => {
     const articles = [makeArticle('1'), makeArticle('2')];
-    const result = await summarizeAll(articles);
+    const promise = summarizeAll(articles);
+    await jest.runAllTimersAsync();
+    const result = await promise;
     expect(result).toHaveLength(2);
     result.forEach((a) => expect(a.summary).toBe('Resumo gerado pelo Gemini.'));
   });
