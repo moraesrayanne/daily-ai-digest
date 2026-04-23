@@ -1,4 +1,4 @@
-import { getSentUrls, saveDigest } from './supabase';
+import { getSentUrls, saveDigest, _resetClientForTest } from './supabase';
 import { Article } from '../types';
 
 const mockSelect = jest.fn();
@@ -33,6 +33,7 @@ describe('getSentUrls', () => {
   afterEach(() => {
     delete process.env.SUPABASE_URL;
     delete process.env.SUPABASE_KEY;
+    _resetClientForTest();
     jest.clearAllMocks();
   });
 
@@ -77,6 +78,7 @@ describe('saveDigest', () => {
   afterEach(() => {
     delete process.env.SUPABASE_URL;
     delete process.env.SUPABASE_KEY;
+    _resetClientForTest();
     jest.clearAllMocks();
   });
 

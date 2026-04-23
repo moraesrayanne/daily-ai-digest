@@ -1,20 +1,27 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { Article } from '../types';
 
-function client() {
+let _client: SupabaseClient | null = null;
+
+function getClient(): SupabaseClient {
+  if (_client) return _client;
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_KEY;
   if (!url) throw new Error('SUPABASE_URL is not set');
   if (!key) throw new Error('SUPABASE_KEY is not set');
-  return createClient(url, key);
+  _client = createClient(url, key);
+  return _client;
+}
+
+export function _resetClientForTest(): void {
+  _client = null;
 }
 
 export async function getSentUrls(days = 30): Promise<string[]> {
   const since = new Date();
   since.setDate(since.getDate() - days);
 
-  const supabase = client();
-  const { data, error } = await supabase
+  const { data, error } = await getClient()
     .from('articles')
     .select('url')
     .gte('created_at', since.toISOString());
@@ -24,7 +31,7 @@ export async function getSentUrls(days = 30): Promise<string[]> {
 }
 
 export async function saveDigest(articles: Article[]): Promise<void> {
-  const supabase = client();
+  const supabase = getClient();
   const today = new Date().toISOString().slice(0, 10);
 
   const articleRows = articles.map((a) => ({

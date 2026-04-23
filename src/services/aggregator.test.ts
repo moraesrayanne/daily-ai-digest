@@ -3,12 +3,14 @@ import * as devto from '../adapters/devto';
 import * as hackernews from '../adapters/hackernews';
 import * as arxiv from '../adapters/arxiv';
 import * as rss from '../adapters/rss';
+import * as anthropic from '../adapters/anthropic';
 import { Article } from '../types';
 
 jest.mock('../adapters/devto');
 jest.mock('../adapters/hackernews');
 jest.mock('../adapters/arxiv');
 jest.mock('../adapters/rss');
+jest.mock('../adapters/anthropic');
 
 const makeArticle = (id: string): Article => ({
   id,
@@ -28,11 +30,12 @@ describe('aggregator', () => {
     (hackernews.fetchArticles as jest.Mock).mockResolvedValue([makeArticle('h1')]);
     (arxiv.fetchArticles as jest.Mock).mockResolvedValue([makeArticle('a1')]);
     (rss.fetchArticles as jest.Mock).mockResolvedValue([makeArticle('r1')]);
+    (anthropic.fetchArticles as jest.Mock).mockResolvedValue([makeArticle('n1')]);
 
     const articles = await aggregate();
-    expect(articles).toHaveLength(4);
+    expect(articles).toHaveLength(5);
     expect(articles.map((a) => a.id)).toEqual(
-      expect.arrayContaining(['d1', 'h1', 'a1', 'r1'])
+      expect.arrayContaining(['d1', 'h1', 'a1', 'r1', 'n1'])
     );
   });
 
@@ -41,6 +44,7 @@ describe('aggregator', () => {
     (hackernews.fetchArticles as jest.Mock).mockResolvedValue([]);
     (arxiv.fetchArticles as jest.Mock).mockResolvedValue([makeArticle('a1')]);
     (rss.fetchArticles as jest.Mock).mockResolvedValue([makeArticle('r1')]);
+    (anthropic.fetchArticles as jest.Mock).mockResolvedValue([]);
 
     const articles = await aggregate();
     expect(Array.isArray(articles)).toBe(true);

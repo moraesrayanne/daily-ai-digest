@@ -1,17 +1,10 @@
 import { send } from './sender';
+import { getEmailProvider, _resetProviderForTest } from '../email/factory';
 import { EmailPayload } from './formatter';
 
-const mockSend = jest.fn();
+jest.mock('../email/factory');
 
-jest.mock('@sendgrid/mail', () => ({
-  __esModule: true,
-  default: { setApiKey: jest.fn(), send: (...args: unknown[]) => mockSend(...args) },
-}));
-
-jest.mock('./sender', () => {
-  const actual = jest.requireActual('./sender');
-  return { ...actual, sleep: jest.fn().mockResolvedValue(undefined) };
-});
+const mockProviderSend = jest.fn();
 
 const payload: EmailPayload = {
   subject: '🤖 Daily AI Digest — 01/01/2024',
@@ -19,57 +12,55 @@ const payload: EmailPayload = {
   text: 'test',
 };
 
+beforeEach(() => {
+  (getEmailProvider as jest.Mock).mockReturnValue({ send: mockProviderSend });
+  mockProviderSend.mockResolvedValue(undefined);
+});
+
+afterEach(() => {
+  jest.clearAllMocks();
+  _resetProviderForTest();
+  delete process.env.EMAIL_TO;
+});
+
 describe('send', () => {
-  const OLD_ENV = process.env;
-
-  beforeEach(() => {
-    process.env = { ...OLD_ENV, SENDGRID_API_KEY: 'sg-key', EMAIL_TO: 'user@example.com' };
-    mockSend.mockReset();
-  });
-
-  afterEach(() => {
-    process.env = OLD_ENV;
-  });
-
-  it('sends email and resolves on success', async () => {
-    mockSend.mockResolvedValueOnce({});
-    await expect(send(payload)).resolves.toBeUndefined();
-    expect(mockSend).toHaveBeenCalledTimes(1);
-  });
-
-  it('uses EMAIL_FROM env when set', async () => {
-    process.env.EMAIL_FROM = 'custom@example.com';
-    mockSend.mockResolvedValueOnce({});
-    await send(payload);
-    expect(mockSend).toHaveBeenCalledWith(expect.objectContaining({ from: 'custom@example.com' }));
-  });
-
-  it('defaults from to digest@dailyaidigest.com', async () => {
-    delete process.env.EMAIL_FROM;
-    mockSend.mockResolvedValueOnce({});
-    await send(payload);
-    expect(mockSend).toHaveBeenCalledWith(expect.objectContaining({ from: 'digest@dailyaidigest.com' }));
-  });
-
-  it('throws immediately when SENDGRID_API_KEY missing', async () => {
-    delete process.env.SENDGRID_API_KEY;
-    await expect(send(payload)).rejects.toThrow('SENDGRID_API_KEY');
-  });
-
-  it('throws immediately when EMAIL_TO missing', async () => {
+  it('throws when EMAIL_TO is not set', async () => {
     delete process.env.EMAIL_TO;
-    await expect(send(payload)).rejects.toThrow('EMAIL_TO');
+    await expect(send(payload)).rejects.toThrow('EMAIL_TO is not set');
   });
 
-  it('retries up to 3 times then throws', async () => {
-    mockSend.mockRejectedValue(new Error('network error'));
-    await expect(send(payload)).rejects.toThrow('network error');
-    expect(mockSend).toHaveBeenCalledTimes(3);
+  it('sends to a single recipient', async () => {
+    process.env.EMAIL_TO = 'user@example.com';
+    await send(payload);
+    expect(mockProviderSend).toHaveBeenCalledTimes(1);
+    expect(mockProviderSend).toHaveBeenCalledWith(payload, 'user@example.com');
   });
 
-  it('succeeds on second attempt after first failure', async () => {
-    mockSend.mockRejectedValueOnce(new Error('fail')).mockResolvedValueOnce({});
-    await expect(send(payload)).resolves.toBeUndefined();
-    expect(mockSend).toHaveBeenCalledTimes(2);
+  it('sends to multiple recipients in parallel', async () => {
+    process.env.EMAIL_TO = 'a@example.com, b@example.com, c@example.com';
+    await send(payload);
+    expect(mockProviderSend).toHaveBeenCalledTimes(3);
+    expect(mockProviderSend).toHaveBeenCalledWith(payload, 'a@example.com');
+    expect(mockProviderSend).toHaveBeenCalledWith(payload, 'b@example.com');
+    expect(mockProviderSend).toHaveBeenCalledWith(payload, 'c@example.com');
+  });
+
+  it('trims whitespace from recipient emails', async () => {
+    process.env.EMAIL_TO = '  me@example.com  ,  you@example.com  ';
+    await send(payload);
+    expect(mockProviderSend).toHaveBeenCalledWith(payload, 'me@example.com');
+    expect(mockProviderSend).toHaveBeenCalledWith(payload, 'you@example.com');
+  });
+
+  it('ignores empty entries in EMAIL_TO', async () => {
+    process.env.EMAIL_TO = 'a@example.com,,b@example.com';
+    await send(payload);
+    expect(mockProviderSend).toHaveBeenCalledTimes(2);
+  });
+
+  it('delegates to the active email provider', async () => {
+    process.env.EMAIL_TO = 'user@example.com';
+    await send(payload);
+    expect(getEmailProvider).toHaveBeenCalled();
   });
 });
