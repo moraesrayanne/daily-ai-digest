@@ -1,7 +1,16 @@
 import { Article } from '../types';
 
-const HIGH_KEYWORDS = /\b(LLM|GPT|neural)\b/i;
-const MED_KEYWORDS = /\b(AI|ML)\b/i;
+// Tier 1 — model releases, major research breakthroughs (+0.35)
+const TIER1 = /\b(GPT-\d|Claude\s*\d|Gemini\s*[\d.]+|LLaMA\s*\d|Mistral|Grok|o1|o3|AlphaFold|Sora|Gemma|Phi-\d|DeepSeek|Qwen)\b|benchmark|state[- ]of[- ]the[- ]art|SOTA|surpass|beats|outperform|breakthrough|emergent|alignment/i;
+
+// Tier 2 — companies, hardware, applied research (+0.2)
+const TIER2 = /\b(OpenAI|Anthropic|DeepMind|Google\s*AI|Meta\s*AI|Microsoft\s*AI|NVIDIA|Trainium|Copilot|Perplexity|Hugging\s*Face|LLM|GPT|neural|transformer|diffusion|fine.tun|open.source|open-weight)\b/i;
+
+// Tier 3 — general AI/ML signal (+0.1)
+const TIER3 = /\b(AI|ML|machine\s*learning|deep\s*learning|language\s*model|chip|autonomous|robot|inference|agent)\b/i;
+
+// Negative signal — tutorials, listicles, beginner content (−0.2)
+const LOW_VALUE = /\b(tutorial|how\s*to|beginner|getting\s*started|introduction\s*to|top\s*\d+\s*(tools|tips|ways)|vs\s*code|course|learn\s*(python|javascript))\b/i;
 
 function recencyScore(publishedAt: Date, now: Date): number {
   const ageMs = now.getTime() - publishedAt.getTime();
@@ -13,9 +22,11 @@ function recencyScore(publishedAt: Date, now: Date): number {
 
 function relevanceScore(title: string): number {
   let score = 0;
-  if (HIGH_KEYWORDS.test(title)) score += 0.2;
-  if (MED_KEYWORDS.test(title)) score += 0.1;
-  return Math.min(score, 1.0);
+  if (TIER1.test(title))     score += 0.35;
+  if (TIER2.test(title))     score += 0.2;
+  if (TIER3.test(title))     score += 0.1;
+  if (LOW_VALUE.test(title)) score -= 0.2;
+  return Math.max(0, Math.min(score, 1.0));
 }
 
 export function rank(articles: Article[], now: Date = new Date()): Article[] {

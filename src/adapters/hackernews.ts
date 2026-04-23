@@ -2,7 +2,7 @@ import axios from 'axios';
 import { Article } from '../types';
 
 const BASE = 'https://hacker-news.firebaseio.com/v0';
-const AI_KEYWORDS = /\b(AI|LLM|GPT|ML|neural|machine.learning|deep.learning|model|agent|claude|openai|gemini|mistral|llama|transformer|diffusion|benchmark|inference|fine.tun)\b/i;
+const AI_KEYWORDS = /\b(AI|LLM|GPT|ML|neural|machine.learning|deep.learning|model|agent|claude|openai|gemini|mistral|llama|grok|deepseek|qwen|phi|transformer|diffusion|benchmark|inference|fine.tun|alignment|chip|nvidia|anthropic|deepmind|autonomous|robot|multimodal|vision|language.model|open.source|weights)\b/i;
 
 interface HNStory {
   id: number;
