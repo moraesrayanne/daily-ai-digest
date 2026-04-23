@@ -13,16 +13,11 @@ export async function getSentUrls(days = 30): Promise<string[]> {
   const since = new Date();
   since.setDate(since.getDate() - days);
 
-  // Exclude today so re-runs on the same day are not blocked
-  const startOfToday = new Date();
-  startOfToday.setUTCHours(0, 0, 0, 0);
-
   const supabase = client();
   const { data, error } = await supabase
     .from('articles')
     .select('url')
-    .gte('created_at', since.toISOString())
-    .lt('created_at', startOfToday.toISOString());
+    .gte('created_at', since.toISOString());
 
   if (error) throw error;
   return (data ?? []).map((row: { url: string }) => row.url);
