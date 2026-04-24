@@ -2,11 +2,7 @@
 
 import { useEffect } from 'react';
 
-export default function Error({ error, reset }: { error: Error; reset: () => void }) {
-  useEffect(() => {
-    console.error(error);
-  }, [error]);
-
+export default function Error({ reset }: { error: Error; reset: () => void }) {
   return (
     <div style={{ padding: '60px 24px', textAlign: 'center', fontFamily: 'system-ui, sans-serif' }}>
       <p style={{ color: '#9C9189', fontSize: 14, marginBottom: 16 }}>Algo deu errado ao carregar a página.</p>

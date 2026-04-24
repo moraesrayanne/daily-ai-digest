@@ -1,16 +1,15 @@
 'use client';
 
 import { Header } from '@/components/Header';
-import { DayHeader, DayMeta, TodayBadge, PublishedAt, DayTitle, Description } from './DigestClient.styles';
+import { DayHeader, DayMeta, TodayBadge, PublishedAt, DayTitle, Description } from './DigestHeader.styles';
 
-interface DigestClientProps {
-  dateShort: string;
+interface DigestHeaderProps {
   dateFormatted: string;
   sentAt: string;
   isToday: boolean;
 }
 
-export function DigestClient({ dateShort, dateFormatted, sentAt, isToday }: DigestClientProps) {
+export function DigestHeader({ dateFormatted, sentAt, isToday }: DigestHeaderProps) {
   return (
     <div>
       <Header showBack lastUpdated={sentAt} />

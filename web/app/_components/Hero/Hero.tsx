@@ -1,10 +1,10 @@
 'use client';
 
-import { Accent, Category, EyebrowDot, H1, Hero, HeroEyebrow, Tagline } from './HomeClient.styles';
+import { Accent, Category, EyebrowDot, H1, Hero as HeroWrapper, HeroEyebrow, Tagline } from './Hero.styles';
 
-export function HomeClient() {
+export function Hero() {
   return (
-    <Hero>
+    <HeroWrapper>
       <HeroEyebrow>
         <Category>Inteligência Artificial</Category>
         <EyebrowDot>·</EyebrowDot>
@@ -14,6 +14,6 @@ export function HomeClient() {
         O que importa em IA,<br />
         <Accent>curado todo dia para você.</Accent>
       </H1>
-    </Hero>
+    </HeroWrapper>
   );
 }
