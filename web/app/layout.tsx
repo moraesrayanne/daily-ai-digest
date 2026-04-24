@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import { Instrument_Serif, DM_Sans } from 'next/font/google';
 import './globals.css';
-import { StyledComponentsRegistry } from '@/lib/registry';
 import { Providers } from '@/lib/providers';
 
 const instrumentSerif = Instrument_Serif({
@@ -27,11 +26,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="pt-BR">
       <body className={`${instrumentSerif.variable} ${dmSans.variable}`}>
-        <StyledComponentsRegistry>
-          <Providers>
-            {children}
-          </Providers>
-        </StyledComponentsRegistry>
+        <Providers>
+          {children}
+        </Providers>
       </body>
     </html>
   );

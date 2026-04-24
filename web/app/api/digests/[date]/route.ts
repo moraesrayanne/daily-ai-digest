@@ -1,27 +1,12 @@
-import { createClient } from '@supabase/supabase-js';
+import { getSupabase } from '@/lib/supabase';
 import { NextResponse } from 'next/server';
 import { DigestDetail } from '@/types/digest';
-import { formatDateLong, formatDateShort, formatSentAt, isToday } from '@/lib/formatDate';
+import { formatDateLong, formatDateShort, formatSentAt, isToday, formatArticleDate } from '@/lib/formatDate';
 
 export const revalidate = 300;
 
-const MONTHS_SHORT = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
-
-function formatArticleDate(isoString: string): string {
-  const d = new Date(isoString);
-  const day = d.getDate().toString().padStart(2, '0');
-  const month = MONTHS_SHORT[d.getMonth()];
-  const year = d.getFullYear();
-  const hours = d.getHours().toString().padStart(2, '0');
-  const minutes = d.getMinutes().toString().padStart(2, '0');
-  return `${day} ${month} ${year}, ${hours}:${minutes}`;
-}
-
 export async function GET(_req: Request, { params }: { params: { date: string } }) {
-  const supabase = createClient(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_KEY!,
-  );
+  const supabase = getSupabase();
 
   const { data: digest, error: digestError } = await supabase
     .from('digests')

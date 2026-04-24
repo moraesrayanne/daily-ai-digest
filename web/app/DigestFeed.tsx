@@ -1,10 +1,10 @@
-import { createClient } from '@supabase/supabase-js';
+import { getSupabase } from '@/lib/supabase';
 import { DigestCard } from '@/components/DigestCard';
 import { DigestListItem } from '@/types/digest';
 import { formatDateLong, formatDateShort, formatSentAt, isToday } from '@/lib/formatDate';
 
 async function getDigests(): Promise<DigestListItem[]> {
-  const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_KEY!);
+  const supabase = getSupabase();
 
   const { data: digests, error } = await supabase
     .from('digests')

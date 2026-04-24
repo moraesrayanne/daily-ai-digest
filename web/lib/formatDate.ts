@@ -1,5 +1,5 @@
 const MONTHS_LONG = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
-const MONTHS_SHORT = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+export const MONTHS_SHORT = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
 const DAYS_SHORT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
 
 export function formatDateLong(dateStr: string): string {
@@ -14,21 +14,36 @@ export function formatDateShort(dateStr: string): string {
   return `${day}, ${d} ${MONTHS_SHORT[month - 1]}`;
 }
 
+function toBRT(isoString: string) {
+  return new Intl.DateTimeFormat('pt-BR', {
+    timeZone: 'America/Sao_Paulo',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).formatToParts(new Date(isoString));
+}
+
 export function formatSentAt(isoString: string): string {
-  const d = new Date(isoString);
-  const day = d.getDate();
-  const month = MONTHS_SHORT[d.getMonth()];
-  const year = d.getFullYear();
-  const hours = d.getHours().toString().padStart(2, '0');
-  const minutes = d.getMinutes().toString().padStart(2, '0');
-  return `${day} ${month} ${year}, ${hours}:${minutes}`;
+  const parts = toBRT(isoString);
+  const get = (type: string) => parts.find(p => p.type === type)?.value ?? '';
+  const monthIndex = parseInt(get('month'), 10) - 1;
+  return `${parseInt(get('day'), 10)} ${MONTHS_SHORT[monthIndex]} ${get('year')}, ${get('hour')}:${get('minute')}`;
+}
+
+export function formatArticleDate(isoString: string): string {
+  const parts = toBRT(isoString);
+  const get = (type: string) => parts.find(p => p.type === type)?.value ?? '';
+  const monthIndex = parseInt(get('month'), 10) - 1;
+  return `${parseInt(get('day'), 10)} ${MONTHS_SHORT[monthIndex]} ${get('year')}, ${get('hour')}:${get('minute')}`;
 }
 
 export function formatTimeOnly(isoString: string): string {
-  const d = new Date(isoString);
-  const hours = d.getHours().toString().padStart(2, '0');
-  const minutes = d.getMinutes().toString().padStart(2, '0');
-  return `${hours}:${minutes}`;
+  const parts = toBRT(isoString);
+  const get = (type: string) => parts.find(p => p.type === type)?.value ?? '';
+  return `${get('hour')}:${get('minute')}`;
 }
 
 export function isToday(dateStr: string): boolean {
