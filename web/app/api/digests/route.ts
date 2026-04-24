@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import { DigestListItem } from '@/types/digest';
-import { formatDateLong, formatDateShort, formatPublishedAt, isToday } from '@/lib/formatDate';
+import { formatDateLong, formatDateShort, formatSentAt, isToday } from '@/lib/formatDate';
 
 export const revalidate = 300;
 
@@ -13,7 +13,7 @@ export async function GET() {
 
   const { data: digests, error } = await supabase
     .from('digests')
-    .select('id, date, article_count')
+    .select('id, date, article_count, sent_at')
     .order('date', { ascending: false })
     .limit(30);
 
@@ -34,7 +34,7 @@ export async function GET() {
         date: digest.date,
         dateFormatted: formatDateLong(digest.date),
         dateShort: formatDateShort(digest.date),
-        publishedAt: formatPublishedAt(digest.date),
+        sentAt: formatSentAt(digest.sent_at),
         isToday: isToday(digest.date),
         articleCount: digest.article_count ?? titles.length,
         titles,

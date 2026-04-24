@@ -21,7 +21,7 @@ export interface DigestDetail {
   date: string;
   dateFormatted: string;
   dateShort: string;
-  publishedAt: string;
+  sentAt: string;
   isToday: boolean;
   articles: ArticleDetail[];
 }
