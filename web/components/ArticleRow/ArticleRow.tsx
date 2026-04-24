@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { SourcePill } from './SourcePill';
+import { SourcePill } from '@/components/SourcePill';
 import { ArticleDetail } from '@/types/digest';
 import {
   Wrapper,

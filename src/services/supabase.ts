@@ -53,7 +53,7 @@ export async function saveDigest(articles: Article[]): Promise<void> {
 
   const { data: digestData, error: digestError } = await supabase
     .from('digests')
-    .upsert({ date: today, article_count: articles.length }, { onConflict: 'date' })
+    .upsert({ date: today, article_count: articles.length, sent_at: new Date().toISOString() }, { onConflict: 'date' })
     .select('id')
     .single();
 

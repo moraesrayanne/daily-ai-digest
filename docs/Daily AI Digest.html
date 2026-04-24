@@ -1,0 +1,1124 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Daily AI Digest</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap" rel="stylesheet"/>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #F9F8F5;
+    --bg-card: #FFFEFB;
+    --bg-hover: #F4F2EE;
+    --text-primary: #1C1917;
+    --text-secondary: #6B6459;
+    --text-muted: #9C9189;
+    --accent: oklch(63% 0.16 40);
+    --accent-light: oklch(93% 0.05 40);
+    --accent-mid: oklch(80% 0.10 40);
+    --border: #E8E4DE;
+    --border-strong: #D4CFC8;
+    --shadow-sm: 0 1px 3px rgba(28,25,23,0.06), 0 1px 2px rgba(28,25,23,0.04);
+    --shadow-md: 0 4px 16px rgba(28,25,23,0.08), 0 1px 4px rgba(28,25,23,0.04);
+    --shadow-lg: 0 12px 40px rgba(28,25,23,0.10), 0 2px 8px rgba(28,25,23,0.06);
+    --radius: 14px;
+    --radius-sm: 8px;
+    --font-serif: 'Instrument Serif', Georgia, serif;
+    --font-sans: 'DM Sans', system-ui, sans-serif;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    font-size: 15px;
+    line-height: 1.6;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Grain overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.4;
+  }
+
+  #root { min-height: 100vh; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(18px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateX(24px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+  .animate-fadeUp { animation: fadeUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .animate-fadeIn { animation: fadeIn 0.4s ease both; }
+  .animate-slideIn { animation: slideIn 0.45s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+  /* Source pills */
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border-radius: 100px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+  }
+  .pill-arxiv { background: #EEF0FF; color: #4A55D0; }
+  .pill-hn { background: #FFF0E8; color: #C04A00; }
+  .pill-devto { background: #E8F5E9; color: #2A7A3A; }
+  .pill-techcrunch { background: #F3E8FF; color: #7C3AAD; }
+  .pill-mit { background: #E8F4FF; color: #0A5FA8; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+
+const { useState, useEffect, useRef } = React;
+
+// ─── DATA ──────────────────────────────────────────────────────────────────
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "accentColor": "oklch(63% 0.16 40)",
+  "darkMode": false,
+  "compactFeed": false
+}/*EDITMODE-END*/;
+
+const DIGESTS = [
+{
+  id: "2026-04-22",
+  date: "22 de abril de 2026",
+  dateShort: "Ter, 22 abr",
+  publishedAt: "22 abr 2026, 07:00",
+  isToday: true,
+  summary: "OpenAI lança GPT-5 Turbo com raciocínio aprimorado · Google DeepMind anuncia AlphaFold 4 · Anthropic publica pesquisa sobre alinhamento de longo prazo · Meta libera LLaMA 4 open-source · Novo benchmark revela gaps entre LLMs · Pesquisa: agentes autônomos superam humanos em tarefas de código · EU AI Act entra em fase de implementação · Startup brasileira de IA capta R$200M · Novo ataque de jailbreak preocupa especialistas · Estudo: IA reduz desigualdade médica",
+  articles: [
+  {
+    pos: 1, source: "techcrunch",
+    title: "OpenAI lança GPT-5 Turbo com raciocínio 3x mais rápido e contexto de 2M tokens",
+    summary: "A OpenAI anunciou hoje o GPT-5 Turbo, uma versão otimizada do seu modelo principal com janela de contexto de 2 milhões de tokens — suficiente para processar livros inteiros ou codebases complexas em uma única chamada. O modelo apresenta melhorias significativas em raciocínio matemático e lógico, com benchmarks 40% acima do GPT-4o. A empresa afirma que o custo por token caiu 60% em relação ao predecessor. Desenvolvedores já relatam ganhos expressivos em tarefas de análise de dados e geração de código. Disponível na API a partir desta semana.",
+    originalDate: "22 abr 2026, 06:14",
+    url: "https://techcrunch.com"
+  },
+  {
+    pos: 2, source: "arxiv",
+    title: "AlphaFold 4 prediz estruturas proteicas com precisão atômica em tempo real",
+    summary: "Pesquisadores do Google DeepMind publicaram o artigo apresentando o AlphaFold 4, capaz de predizer estruturas proteicas com resolução sub-angstrom — superando técnicas experimentais em velocidade por um fator de 10.000. O modelo incorpora dinâmica molecular, permitindo simular o comportamento proteico ao longo do tempo. Os autores demonstraram aplicação direta no design de enzimas para biorremediação. O código e pesos serão liberados sob licença aberta para pesquisa acadêmica. Espera-se impacto imediato em desenvolvimento de fármacos.",
+    originalDate: "21 abr 2026, 23:47",
+    url: "https://arxiv.org"
+  },
+  {
+    pos: 3, source: "hn",
+    title: "Anthropic: nosso novo framework de alinhamento reduz comportamentos indesejados em 94%",
+    summary: "Em post detalhado no blog, a Anthropic descreveu um framework de alinhamento baseado em 'constitutional AI v3', com técnicas novas de interpretabilidade que permitem identificar e corrigir comportamentos problemáticos antes do deploy. Os testes internos mostram redução de 94% em respostas prejudiciais sem degradação perceptível de performance. A empresa defende que o método é escalável e pode ser aplicado a qualquer arquitetura transformer. Parte do código será open-source. Pesquisadores externos elogiaram a transparência metodológica.",
+    originalDate: "22 abr 2026, 01:30",
+    url: "https://news.ycombinator.com"
+  },
+  {
+    pos: 4, source: "hn",
+    title: "Meta libera LLaMA 4 com 405B parâmetros — o maior modelo open-source da história",
+    summary: "A Meta surpreendeu a comunidade ao liberar o LLaMA 4 com 405 bilhões de parâmetros sob licença permissiva para uso comercial. O modelo rivaliza com modelos proprietários em benchmarks padrão e supera versões anteriores em multilinguismo, incluindo português. O download já está disponível no Hugging Face. Empresas de menor porte comemoram a possibilidade de fine-tuning local sem custos de API. A comunidade open-source já iniciou adaptações para hardware consumer. Analistas avaliam impacto no mercado de modelos como 'disruptivo'.",
+    originalDate: "22 abr 2026, 05:00",
+    url: "https://news.ycombinator.com"
+  },
+  {
+    pos: 5, source: "arxiv",
+    title: "Novo benchmark HELM-2 expõe lacunas críticas de raciocínio causal em todos os LLMs atuais",
+    summary: "Pesquisadores de Stanford publicaram o HELM-2, um benchmark de raciocínio causal e contrafactual que revela limitações sistemáticas em todos os modelos avaliados, incluindo GPT-5 e Claude 4. Nenhum modelo superou 72% nas tarefas mais complexas, enquanto humanos alcançam 94%. O paper argumenta que os LLMs ainda aprendem correlações estatísticas, não causalidade genuína. Os autores propõem um roadmap para modelos de próxima geração. O dataset está publicamente disponível para reprodução.",
+    originalDate: "21 abr 2026, 20:15",
+    url: "https://arxiv.org"
+  },
+  {
+    pos: 6, source: "devto",
+    title: "Agentes autônomos de IA superam engenheiros sênior em resolução de issues do GitHub",
+    summary: "Um estudo publicado por pesquisadores da CMU avaliou agentes autônomos baseados em LLMs resolvendo issues reais do GitHub em projetos populares. Os agentes alcançaram taxa de resolução de 67% em issues classificadas como 'medium difficulty', superando a média de engenheiros sênior (61%) no mesmo conjunto. O tempo médio de resolução foi 8 minutos contra 2,3 horas humanas. O paper detalha o framework multi-agente utilizado e disponibiliza o benchmark SWE-Bench-Pro para a comunidade.",
+    originalDate: "22 abr 2026, 03:22",
+    url: "https://dev.to"
+  },
+  {
+    pos: 7, source: "techcrunch",
+    title: "EU AI Act: primeiras multas chegam a €40M contra empresas de reconhecimento facial",
+    summary: "A Comissão Europeia aplicou as primeiras multas significativas sob o AI Act, totalizando €40 milhões contra três empresas de reconhecimento facial por uso em espaços públicos sem aprovação regulatória. O caso sinaliza que a fase de enforcement começou de fato. Especialistas jurídicos alertam que empresas de tecnologia devem revisar seus sistemas urgentemente. O regulador publicou guias atualizados de conformidade. Startups europeiras de IA expressam preocupação com burocracia excessiva.",
+    originalDate: "22 abr 2026, 08:45",
+    url: "https://techcrunch.com"
+  },
+  {
+    pos: 8, source: "hn",
+    title: "Startup brasileira Nexus AI capta R$200M para expandir LLM focado em português",
+    summary: "A Nexus AI, fundada em São Paulo em 2024, anunciou rodada série B de R$200 milhões liderada por fundos nacionais e internacionais. A empresa desenvolve modelos de linguagem especializados em português brasileiro com foco em jurídico, saúde e finanças. O CEO afirma que o modelo supera o GPT-4 em tarefas específicas do domínio legal brasileiro. A captação será usada para expansão de infraestrutura e contratação de pesquisadores. É a maior rodada de IA no Brasil até hoje.",
+    originalDate: "22 abr 2026, 09:00",
+    url: "https://news.ycombinator.com"
+  },
+  {
+    pos: 9, source: "arxiv",
+    title: "Novo vetor de ataque 'PromptBleed' extrai instruções de sistema de qualquer LLM via API",
+    summary: "Pesquisadores de segurança publicaram detalhes do PromptBleed, uma técnica que explora inconsistências no processamento de tokens para reconstruir parcialmente o system prompt de modelos comerciais. Testes bem-sucedidos foram realizados contra GPT-4o, Claude e Gemini. Os autores notificaram as empresas 90 dias antes da publicação. OpenAI e Anthropic já lançaram patches. O paper levanta questões sobre a privacidade de prompts proprietários em produção e recomenda camadas adicionais de ofuscação.",
+    originalDate: "21 abr 2026, 22:10",
+    url: "https://arxiv.org"
+  },
+  {
+    pos: 10, source: "devto",
+    title: "Estudo com 50.000 pacientes: IA reduz disparidade diagnóstica entre ricos e pobres em 38%",
+    summary: "Pesquisa multicêntrica publicada na Nature Medicine avaliou o impacto de sistemas de IA diagnóstica em hospitais públicos brasileiros. O estudo encontrou redução de 38% na disparidade diagnóstica entre pacientes de alta e baixa renda quando médicos usavam suporte de IA. O efeito foi mais pronunciado para doenças cardiovasculares e oncológicas. Os autores alertam que o acesso desigual à tecnologia pode reverter esses ganhos. O governo federal estuda programa de distribuição nacional.",
+    originalDate: "22 abr 2026, 04:55",
+    url: "https://dev.to"
+  }]
+
+},
+{
+  id: "2026-04-21",
+  date: "21 de abril de 2026",
+  dateShort: "Seg, 21 abr",
+  publishedAt: "21 abr 2026, 07:00",
+  isToday: false,
+  summary: "Claude 4 supera GPT-4o em raciocínio científico · Microsoft integra Copilot ao Windows 11 nativamente · Pesquisa: LLMs desenvolvem teoria da mente rudimentar · NVIDIA anuncia chip H300 para IA · Vazamento revela planos do Apple Intelligence · Robô humanoide da Figure completa tarefa industrial · IA gera música indistinguível de compositores humanos · Novo método acelera fine-tuning em 10x · China proíbe modelos sem aprovação governamental · Pesquisadores criam IA que 'esquece' sob demanda",
+  articles: [
+  {
+    pos: 1, source: "techcrunch",
+    title: "Claude 4 da Anthropic supera GPT-4o em raciocínio científico e matemático avançado",
+    summary: "A Anthropic lançou o Claude 4 com melhorias substanciais em raciocínio quantitativo, alcançando 96,3% no benchmark MATH-500 — dois pontos acima do GPT-4o. O modelo apresenta redução de alucinações em domínios técnicos e melhor calibração de incerteza. A janela de contexto foi expandida para 500K tokens. Usuários do plano Pro relatam experiência significativamente mais fluida em tarefas de análise. A API foi atualizada automaticamente para todos os desenvolvedores.",
+    originalDate: "21 abr 2026, 06:30",
+    url: "https://techcrunch.com"
+  },
+  {
+    pos: 2, source: "hn",
+    title: "Microsoft embute Copilot diretamente no kernel do Windows 11 — sem possibilidade de remoção",
+    summary: "A Microsoft confirmou que o Windows 11 Update 24H2 integra o Copilot em nível de sistema operacional, com acesso a APIs privilegiadas para controle de interface, arquivos e configurações. A decisão gerou reação da comunidade de segurança, que questiona a superfície de ataque expandida. A empresa defende que o acesso é sandboxed. Reguladores europeus já sinalizaram investigação por práticas anticompetitivas. Usuários de Linux relataram aumento de interesse em migração.",
+    originalDate: "21 abr 2026, 10:15",
+    url: "https://news.ycombinator.com"
+  },
+  {
+    pos: 3, source: "arxiv",
+    title: "LLMs demonstram teoria da mente rudimentar em testes padronizados de psicologia cognitiva",
+    summary: "Um paper de pesquisadores do MIT e Oxford apresenta evidências de que modelos como GPT-5 e Claude 4 passam consistentemente em versões avançadas do teste de Sally-Anne, classicamente usado para avaliar teoria da mente em crianças. Os autores são cuidadosos em não afirmar consciência, mas argumentam que o comportamento é funcionalmente equivalente. O estudo usa 47 tarefas diferentes para descartar memorização. Filósofos da mente e pesquisadores de IA estão divididos sobre a interpretação.",
+    originalDate: "20 abr 2026, 23:00",
+    url: "https://arxiv.org"
+  },
+  {
+    pos: 4, source: "techcrunch",
+    title: "NVIDIA H300: chip de IA com 10x mais memória HBM4 e arquitetura Blackwell+",
+    summary: "A NVIDIA apresentou o H300, sucessor do H200, com 288GB de HBM4 e interconexão NVLink de 1.8 TB/s. O chip foi projetado especificamente para modelos acima de 1 trilhão de parâmetros. A empresa afirma que clusters H300 reduzem o custo de treino de grandes modelos em 70%. Pedidos já esgotaram para 2026. Microsoft, Google e Amazon confirmaram aquisições massivas. Analistas preveem nova corrida armamentista em infraestrutura de IA.",
+    originalDate: "21 abr 2026, 14:00",
+    url: "https://techcrunch.com"
+  },
+  {
+    pos: 5, source: "hn",
+    title: "Documentos internos vazados revelam Apple Intelligence com modelo 'Ajax 2' para 2026",
+    summary: "Documentos obtidos por jornalistas revelam que a Apple desenvolve o Ajax 2, um modelo multimodal com capacidades on-device para processamento de imagem, voz e texto simultaneamente. O modelo seria integrado ao iOS 21 e processaria dados sem envio à nuvem para a maioria das tarefas. A empresa teria firmado parceria com o Google para fallback via Gemini. O lançamento está previsto para setembro. A Apple não comentou.",
+    originalDate: "21 abr 2026, 07:45",
+    url: "https://news.ycombinator.com"
+  },
+  {
+    pos: 6, source: "devto",
+    title: "Figure 03 completa linha de montagem completa em fábrica BMW sem supervisão humana",
+    summary: "A Figure AI divulgou vídeo do robô humanoide Figure 03 completando um turno de 8 horas em linha de montagem da BMW na Carolina do Sul sem intervenção humana. O robô utilizou modelos de visão-linguagem para adaptar-se a variações não previstas no ambiente. A taxa de erro foi de 0.3%, comparável a operadores humanos experientes. A BMW planeja escalar para 50 unidades até o final do ano. Sindicatos de trabalhadores automotivos convocaram reunião de emergência.",
+    originalDate: "21 abr 2026, 16:20",
+    url: "https://dev.to"
+  },
+  {
+    pos: 7, source: "arxiv",
+    title: "Modelo generativo de música 'Orpheus-2' passa em teste cego contra compositores profissionais",
+    summary: "Pesquisadores da Universidade de Toronto apresentaram o Orpheus-2, modelo que gera composições musicais orquestrais completas. Em estudo duplo-cego com 200 músicos profissionais, 54% classificaram composições do modelo como sendo de origem humana. O modelo foi treinado em 40 mil partituras do domínio público e utiliza arquitetura de atenção hierárquica. As composições geradas preservam estrutura harmônica e desenvolvimento temático coerentes. Código e demos disponíveis online.",
+    originalDate: "20 abr 2026, 21:30",
+    url: "https://arxiv.org"
+  },
+  {
+    pos: 8, source: "devto",
+    title: "LoRA-Turbo: novo método reduz tempo de fine-tuning de LLMs em 10x com mesma qualidade",
+    summary: "Uma equipe de pesquisa independente publicou o LoRA-Turbo, variante do método LoRA que utiliza gradientes de segunda ordem para acelerar convergência. Testes em LLaMA 4 e Mistral Large mostram redução de 10x no tempo de treino com degradação inferior a 1% nos benchmarks. O método é compatível com hardware consumer (RTX 4090). O repositório no GitHub ultrapassou 8.000 stars em 24 horas. Empresas de MLOps já anunciaram suporte nativo.",
+    originalDate: "21 abr 2026, 13:00",
+    url: "https://dev.to"
+  },
+  {
+    pos: 9, source: "techcrunch",
+    title: "China exige aprovação governamental para todos os modelos de IA com mais de 1B parâmetros",
+    summary: "O governo chinês publicou regulamentação exigindo que todos os modelos de IA com mais de 1 bilhão de parâmetros passem por avaliação de segurança antes de qualquer uso ou distribuição, inclusive interno a empresas. A regulação entra em vigor em 60 dias. Empresas como Baidu e Alibaba afirmam já estar em conformidade. Startups locais expressam preocupação com o processo de aprovação, estimado em 3-6 meses. Analistas avaliam impacto competitivo com empresas ocidentais.",
+    originalDate: "21 abr 2026, 11:00",
+    url: "https://techcrunch.com"
+  },
+  {
+    pos: 10, source: "arxiv",
+    title: "Machine unlearning eficiente permite que LLMs 'esqueçam' dados específicos sob demanda",
+    summary: "Pesquisadores do MIT desenvolveram técnica de machine unlearning que permite remover o efeito de dados específicos de treino de um LLM sem necessidade de re-treinar do zero. O método utiliza vetores de gradiente inverso aplicados seletivamente. Em testes, removeu informações pessoais identificáveis com eficácia de 99,7% mantendo performance geral. A técnica pode viabilizar conformidade com GDPR e LGPD para dados de treino. Paper está sob revisão na NeurIPS 2026.",
+    originalDate: "20 abr 2026, 18:45",
+    url: "https://arxiv.org"
+  }]
+
+},
+{
+  id: "2026-04-20",
+  date: "20 de abril de 2026",
+  dateShort: "Dom, 20 abr",
+  publishedAt: "20 abr 2026, 07:00",
+  isToday: false,
+  summary: "Google Gemini 2.5 Ultra bate recordes em MMLU · Pesquisa mostra IA superando médicos em diagnóstico · Amazon anuncia chips Trainium3 para edge computing · Novo paper sobre emergência em modelos pequenos · Deepfake detector da Meta com 99% de precisão · IA otimiza redes elétricas reduzindo desperdício em 23% · Regulação australiana exige auditoria de IA em empresas · Groq anuncia chip 100x mais rápido · IA prevê crises financeiras com 6 meses de antecedência · Estudo: ChatGPT melhora produtividade de escritores em 40%",
+  articles: [
+  {
+    pos: 1, source: "techcrunch",
+    title: "Gemini 2.5 Ultra do Google alcança 92.1% no MMLU — novo estado da arte absoluto",
+    summary: "O Google DeepMind anunciou o Gemini 2.5 Ultra, modelo que estabelece novo estado da arte no benchmark MMLU com 92.1%, superando todos os competidores em 3,4 pontos percentuais. O modelo se destaca especialmente em ciências exatas, medicina e direito. A arquitetura utiliza mixture-of-experts com 32 especialistas ativos por token. O acesso via API está disponível para usuários do Google Cloud. Desenvolvedores destacam qualidade excepcional em tarefas de raciocínio multi-passo.",
+    originalDate: "20 abr 2026, 09:00",
+    url: "https://techcrunch.com"
+  },
+  {
+    pos: 2, source: "arxiv",
+    title: "IA supera radiologistas especializados em detecção de câncer de pulmão em estágio inicial",
+    summary: "Estudo publicado no NEJM avaliou sistema de IA da Johns Hopkins em 12.000 tomografias de tórax. O modelo detectou cânceres de pulmão em estágio IA com sensibilidade de 97.3% e especificidade de 94.1%, superando painel de 5 radiologistas experientes (sensibilidade 89.2%). A vantagem foi mais pronunciada em lesões pequenas (<8mm). Os autores recomendam o uso como segunda opinião obrigatória. FDA já iniciou processo de aprovação expedita.",
+    originalDate: "19 abr 2026, 21:00",
+    url: "https://arxiv.org"
+  },
+  {
+    pos: 3, source: "hn",
+    title: "Amazon Web Services lança Trainium3 para inferência de IA em dispositivos de borda",
+    summary: "A AWS apresentou o chip Trainium3, projetado para inferência eficiente de modelos de linguagem em hardware de borda — câmeras inteligentes, gateways industriais e dispositivos IoT. O chip executa modelos de até 7B parâmetros com consumo de 5W. A empresa demonstra casos de uso em manufatura e varejo sem dependência de conectividade à nuvem. Preço de $299 por unidade em lotes de produção. Disponibilidade geral prevista para Q3 2026.",
+    originalDate: "20 abr 2026, 13:00",
+    url: "https://news.ycombinator.com"
+  },
+  {
+    pos: 4, source: "arxiv",
+    title: "Emergência em modelos pequenos: capacidades imprevistas surgem em LLMs de apenas 3B parâmetros",
+    summary: "Pesquisadores de Princeton documentaram comportamentos emergentes — capacidades que surgem abruptamente sem treinamento explícito — em modelos tão pequenos quanto 3 bilhões de parâmetros quando treinados com dados de alta qualidade curados. Os autores argumentam que o tamanho do modelo é menos determinante que a qualidade dos dados. O resultado desafia a crença estabelecida de que emergência requer escala massiva. Seis capacidades distintas foram documentadas, incluindo raciocínio analógico e metacognição básica.",
+    originalDate: "19 abr 2026, 22:30",
+    url: "https://arxiv.org"
+  },
+  {
+    pos: 5, source: "devto",
+    title: "Meta lança detector de deepfakes com 99.2% de precisão e latência de 40ms",
+    summary: "A Meta AI publicou o VideoShield 2.0, sistema de detecção de deepfakes baseado em análise de inconsistências em frequências de alta ordem e padrões de difusão. O modelo opera em tempo real com latência de 40ms por frame e precisão de 99.2% em benchmark independente. A empresa disponibilizará a API gratuitamente para plataformas de notícias verificadas. O código do modelo de detecção (não o gerador) será open-source. Especialistas em desinformação aplaudem a iniciativa.",
+    originalDate: "20 abr 2026, 10:30",
+    url: "https://dev.to"
+  },
+  {
+    pos: 6, source: "hn",
+    title: "IA da Google DeepMind otimiza distribuição de energia elétrica, reduz desperdício em 23%",
+    summary: "Um projeto-piloto da Google DeepMind em parceria com a Enel no Brasil demonstrou redução de 23% no desperdício na distribuição de energia elétrica usando RL (reinforcement learning) para otimização em tempo real da rede. O sistema aprende padrões de consumo e antecipa demandas sazonais e horárias. A economia anual estimada é de R$1,2 bilhão para a Enel Brasil. Outros países latino-americanos já expressaram interesse. O modelo será adaptado para redes solares distribuídas.",
+    originalDate: "20 abr 2026, 11:45",
+    url: "https://news.ycombinator.com"
+  },
+  {
+    pos: 7, source: "techcrunch",
+    title: "Austrália exige auditoria de impacto de IA para empresas com mais de 100 funcionários",
+    summary: "O governo australiano publicou regulamentação que exige Avaliações de Impacto de IA (AIIAs) para qualquer empresa com mais de 100 colaboradores que utilize IA em decisões que afetam emprego, crédito ou serviços essenciais. A norma entra em vigor em janeiro de 2027. Consultorias de compliance já relatam aumento expressivo de contratações. Pequenas empresas ficam isentas por dois anos. A Austrália se torna o terceiro país, após UE e Brasil, a implementar regulação abrangente.",
+    originalDate: "20 abr 2026, 07:30",
+    url: "https://techcrunch.com"
+  },
+  {
+    pos: 8, source: "hn",
+    title: "Groq anuncia chip LPU de terceira geração: 100x mais rápido que GPU para inferência de LLMs",
+    summary: "A Groq apresentou o LPU Gen3, processador de linguagem com arquitetura determinística que alcança 100x a velocidade de inferência de GPUs NVIDIA para LLMs de tamanho médio. O chip elimina variabilidade de latência através de compilação estática do grafo computacional. Desenvolvedores relatam tokens por segundo na casa dos 10.000 em modelos de 70B. A empresa anunciou parcerias com três provedores de cloud. Disponibilidade via API a partir de maio.",
+    originalDate: "19 abr 2026, 20:00",
+    url: "https://news.ycombinator.com"
+  },
+  {
+    pos: 9, source: "arxiv",
+    title: "Modelo de IA prevê crises financeiras sistêmicas com até 6 meses de antecedência",
+    summary: "Pesquisadores do Federal Reserve e do BIS publicaram estudo sobre modelo de ML que analisou dados de 80 países entre 1970 e 2025, demonstrando capacidade de prever crises financeiras sistêmicas com 6 meses de antecedência e AUC-ROC de 0.91. O modelo usa combinação de dados macroeconômicos tradicionais com análise de sentimento de redes sociais e fluxo de notícias. Os autores ressalvam risco de profecia auto-realizável se o modelo for amplamente adotado. Banco Central Europeu avalia implementação.",
+    originalDate: "19 abr 2026, 17:00",
+    url: "https://arxiv.org"
+  },
+  {
+    pos: 10, source: "devto",
+    title: "Estudo com 5.000 escritores: uso de ChatGPT aumenta produtividade em 40% sem prejudicar criatividade",
+    summary: "Uma pesquisa longitudinal de 6 meses com 5.000 escritores profissionais avaliou o impacto do uso assistido de ChatGPT em produtividade e qualidade criativa. Escritores com acesso ao modelo produziram 40% mais palavras por hora e avaliadores cegos classificaram seus textos como ligeiramente mais criativos em média. O benefício foi maior para escritores intermediários; especialistas apresentaram ganho menor. O estudo controla para efeito de novidade. Publicado no Journal of Creativity Research.",
+    originalDate: "20 abr 2026, 03:00",
+    url: "https://dev.to"
+  }]
+
+},
+{
+  id: "2026-04-19",
+  date: "19 de abril de 2026",
+  dateShort: "Sáb, 19 abr",
+  publishedAt: "19 abr 2026, 07:00",
+  isToday: false,
+  summary: "OpenAI anuncia o1-pro para todos os usuários · Pesquisa mostra viés racial em modelos de contratação · Mistral lança modelo de código com 72B parâmetros · IA da NASA identifica candidatos a planetas habitáveis · Novo ataque adversarial engana todos os modelos de visão · Sam Altman defende AGI até 2027 · Ferramenta de IA gera interface completa a partir de voz · Europa investe €2 bilhões em soberania de IA · Pesquisa: LLMs em saúde mental apresentam riscos · Nova arquitetura supera transformer em eficiência",
+  articles: [
+  {
+    pos: 1, source: "techcrunch",
+    title: "OpenAI libera o1-pro para todos os planos — raciocínio prolongado sem custo extra",
+    summary: "A OpenAI anunciou que o modelo o1-pro, anteriormente exclusivo do plano Team, estará disponível para todos os usuários pagantes a partir de hoje sem custo adicional. O modelo utiliza 'chain-of-thought' estendido, dedicando até 10 minutos de raciocínio interno para problemas complexos. Usuários relatam resultados excepcionais em provas de matemática olímpica e design de algoritmos. A decisão é interpretada como resposta ao avanço competitivo da Anthropic. Limites de uso generosos foram anunciados.",
+    originalDate: "19 abr 2026, 08:00",
+    url: "https://techcrunch.com"
+  },
+  {
+    pos: 2, source: "arxiv",
+    title: "Auditoria independente encontra viés racial significativo em 12 sistemas de IA para contratação",
+    summary: "Pesquisadores da NYU conduziram auditoria de 12 sistemas de triagem de currículos baseados em IA usados por empresas Fortune 500. Todos os sistemas apresentaram viés estatisticamente significativo contra candidatos com nomes associados a minorias raciais, mesmo quando qualificações eram idênticas. O viés médio resultava em 23% menos chances de avanço para grupos minoritários. Os autores chamam para regulação imediata e auditoria obrigatória. Quatro empresas já suspenderam o uso dos sistemas auditados.",
+    originalDate: "18 abr 2026, 20:00",
+    url: "https://arxiv.org"
+  },
+  {
+    pos: 3, source: "hn",
+    title: "Mistral Code 72B: modelo open-source de código supera GPT-4o em HumanEval",
+    summary: "A Mistral AI lançou o Mistral Code 72B, modelo especializado em geração e análise de código com arquitetura MoE de 72 bilhões de parâmetros ativos. O modelo alcança 91.4% no HumanEval, superando o GPT-4o (88.7%) e se aproximando de modelos proprietários especializados. Suporta 40 linguagens de programação com desempenho consistente. Fine-tuning em dados proprietários de código é explicitamente permitido pela licença Apache 2.0. Já disponível no Hugging Face.",
+    originalDate: "19 abr 2026, 11:00",
+    url: "https://news.ycombinator.com"
+  },
+  {
+    pos: 4, source: "arxiv",
+    title: "IA da NASA identifica 47 novos candidatos a exoplanetas potencialmente habitáveis",
+    summary: "Sistema de IA desenvolvido pelo Jet Propulsion Laboratory analisou dados do telescópio James Webb e identificou 47 exoplanetas candidatos com características atmosféricas compatíveis com habitabilidade. O modelo detecta assinaturas químicas de água, CO2 e metano simultaneamente, tarefa antes impossível por processamento manual. Três candidatos prioritários serão alvo de observação intensiva em 2027. O código do sistema de análise será disponibilizado para a comunidade astronômica internacional.",
+    originalDate: "18 abr 2026, 22:00",
+    url: "https://arxiv.org"
+  },
+  {
+    pos: 5, source: "devto",
+    title: "Ataque adversarial 'VisualFool-3' engana 100% dos modelos de visão computacional testados",
+    summary: "Pesquisadores de segurança publicaram o VisualFool-3, método de ataque adversarial físico que imprime perturbações em objetos reais usando tinta especial, enganando todos os modelos de visão avaliados — incluindo sistemas de carros autônomos e vigilância. O ataque é eficaz em variadas condições de iluminação e ângulo. Os autores alertam que sistemas críticos de segurança não devem depender exclusivamente de visão computacional. Detalhes técnicos foram divulgados de forma responsável após notificação de fabricantes.",
+    originalDate: "19 abr 2026, 03:00",
+    url: "https://dev.to"
+  },
+  {
+    pos: 6, source: "techcrunch",
+    title: "Sam Altman: 'AGI chegará até 2027, e precisamos estar preparados para isso'",
+    summary: "Em entrevista ao Financial Times, Sam Altman afirmou que a OpenAI está 'na trajetória clara' para desenvolver AGI até 2027, definida internamente como um sistema que pode realizar qualquer tarefa cognitiva humana melhor que qualquer humano. Altman reconheceu que a humanidade não está preparada para as implicações econômicas e sociais. Ele defendeu uma renda universal básica financiada por lucros da IA como medida necessária. Pesquisadores externos classificaram o prazo como otimista, mas não impossível.",
+    originalDate: "19 abr 2026, 14:00",
+    url: "https://techcrunch.com"
+  },
+  {
+    pos: 7, source: "devto",
+    title: "VoiceUI: ferramenta gera aplicações web completas a partir de descrição por voz em 90 segundos",
+    summary: "A startup VoiceUI lançou ferramenta que permite descrever uma aplicação web por voz e recebe código funcional em React em menos de 90 segundos. O sistema usa reconhecimento de intenção multi-turno para clarificar requisitos ambíguos antes de gerar código. Em demo ao vivo, gerou um dashboard de analytics completo com gráficos e filtros a partir de descrição de 3 minutos. A ferramenta integra com GitHub e Vercel para deploy imediato. Plano gratuito disponível com 10 gerações mensais.",
+    originalDate: "19 abr 2026, 16:00",
+    url: "https://dev.to"
+  },
+  {
+    pos: 8, source: "hn",
+    title: "Comissão Europeia aprova investimento de €2 bilhões em infraestrutura soberana de IA",
+    summary: "O Parlamento Europeu aprovou pacote de €2 bilhões para criar infraestrutura de computação soberana europeia, incluindo 5 supercomputadores dedicados a IA e um repositório centralizado de datasets públicos de alta qualidade. O objetivo é reduzir dependência de provedores americanos e chineses. França e Alemanha liderarão os primeiros dois clusters. Pesquisadores europeus terão acesso prioritário. Primeiros recursos disponíveis em Q1 2027.",
+    originalDate: "19 abr 2026, 12:30",
+    url: "https://news.ycombinator.com"
+  },
+  {
+    pos: 9, source: "arxiv",
+    title: "LLMs como suporte em saúde mental: estudo identifica riscos de dependência e respostas inadequadas",
+    summary: "Pesquisadores da Universidade de Cambridge avaliaram o uso de LLMs como suporte emocional por 2.000 usuários ao longo de 3 meses. Enquanto 71% relataram benefício subjetivo, 18% desenvolveram padrões de dependência clinicamente preocupantes e 12% receberam recomendações inadequadas em situações de crise. Os autores propõem diretrizes obrigatórias para modelos usados em contextos de saúde mental, incluindo protocolos de escalada para profissionais humanos.",
+    originalDate: "18 abr 2026, 19:00",
+    url: "https://arxiv.org"
+  },
+  {
+    pos: 10, source: "hn",
+    title: "Mamba-3: nova arquitetura de state-space supera transformer em eficiência por fator de 8x",
+    summary: "Pesquisadores da Carnegie Mellon publicaram o Mamba-3, terceira geração da arquitetura de state-space models que processa sequências longas com complexidade linear em vez de quadrática. O modelo supera transformers equivalentes em eficiência por fator de 8x em sequências acima de 32K tokens. Qualidade em benchmarks padrão é comparável a transformers, com vantagem em contextos muito longos. A arquitetura pode viabilizar LLMs eficientes em dispositivos móveis de baixo consumo.",
+    originalDate: "18 abr 2026, 21:45",
+    url: "https://news.ycombinator.com"
+  }]
+
+},
+{
+  id: "2026-04-18",
+  date: "18 de abril de 2026",
+  dateShort: "Sex, 18 abr",
+  publishedAt: "18 abr 2026, 07:00",
+  isToday: false,
+  summary: "Google lança Project Astra para Android · IA gera vacinas sintéticas contra vírus desconhecidos · Perplexity anuncia motor de busca em tempo real · Pesquisa: IA em educação melhora notas em 28% · Tesla FSD v14 alcança zero acidentes em teste de 1M de milhas · Novo modelo de tradução elimina barreiras em 200 idiomas · IA detecta deepfakes em chamadas de vídeo ao vivo · Relatório: 40% dos empregos de escritório serão automatizados · Startup de IA jurídica recebe unicorn status · Paper: LLMs têm viés temporal que prejudica raciocínio sobre futuro",
+  articles: [
+  {
+    pos: 1, source: "techcrunch",
+    title: "Google lança Project Astra no Android: assistente multimodal em tempo real para todos",
+    summary: "O Google anunciou o lançamento do Project Astra para todos os dispositivos Android, um assistente que vê e ouve o ambiente em tempo real e responde contextualmente em menos de 200ms. O sistema é capaz de identificar objetos, ler documentos, reconhecer locais e executar tarefas no sistema operacional. Integração nativa com Google Maps, Gmail e Calendar permite ações diretas. Disponível via atualização do Google Assistant. Críticos levantam preocupações de privacidade com processamento contínuo.",
+    originalDate: "18 abr 2026, 10:00",
+    url: "https://techcrunch.com"
+  },
+  {
+    pos: 2, source: "arxiv",
+    title: "IA de biologia sintética projeta vacinas contra vírus hipotéticos com 89% de eficácia preditiva",
+    summary: "Pesquisadores do Instituto Broad desenvolveram sistema de IA que, dado apenas o código genético de um vírus hipotético ou pouco estudado, projeta candidatos a vacinas usando engenharia de proteínas generativa. Em teste retrospectivo com vírus para os quais vacinas já existem, os candidatos gerados pelo modelo apresentaram 89% de correlação com a eficácia real. A abordagem poderia reduzir o tempo de desenvolvimento de vacinas de anos para semanas no caso de novas pandemias.",
+    originalDate: "17 abr 2026, 22:00",
+    url: "https://arxiv.org"
+  },
+  {
+    pos: 3, source: "hn",
+    title: "Perplexity lança motor de busca com indexação em tempo real — resultados de segundos atrás",
+    summary: "A Perplexity AI lançou nova versão do seu motor de busca com indexação em tempo real de fontes verificadas, permitindo resultados de eventos que ocorreram há segundos. O sistema processa feeds de 50.000 fontes simultaneamente. Em demonstração ao vivo, respondeu corretamente sobre resultado de partida de futebol antes do final do jogo. A empresa anuncia parceria com Reuters e Associated Press para acesso prioritário. Plano Pro inclui alertas em tempo real para tópicos monitorados.",
+    originalDate: "18 abr 2026, 09:00",
+    url: "https://news.ycombinator.com"
+  },
+  {
+    pos: 4, source: "arxiv",
+    title: "Meta-análise com 200.000 estudantes: IA personalizada em educação melhora desempenho em 28%",
+    summary: "Maior estudo já realizado sobre IA em educação analisou dados de 200.000 estudantes em 15 países usando tutores baseados em IA por pelo menos um semestre. Os resultados mostram melhoria média de 28% em avaliações padronizadas, com efeito maior em matemática (34%) e menor em humanidades (19%). O benefício foi mais expressivo para estudantes com dificuldades de aprendizado. Professores com suporte de IA obtiveram resultados melhores que IA isolada. O estudo foi publicado na revista Science.",
+    originalDate: "17 abr 2026, 20:00",
+    url: "https://arxiv.org"
+  },
+  {
+    pos: 5, source: "techcrunch",
+    title: "Tesla FSD v14 completa 1 milhão de milhas em teste interno sem nenhum acidente",
+    summary: "A Tesla divulgou relatório de segurança mostrando que a versão 14 do Full Self-Driving completou 1 milhão de milhas em testes internos supervisionados sem nenhum acidente. O resultado representa melhoria de 10x em relação ao FSD v12. O modelo usa arquitetura pura de visão computacional sem LiDAR. A empresa solicitou aprovação para testes públicos sem motorista de segurança em 5 estados americanos. Reguladores do NHTSA iniciarão revisão em 30 dias.",
+    originalDate: "18 abr 2026, 11:30",
+    url: "https://techcrunch.com"
+  },
+  {
+    pos: 6, source: "devto",
+    title: "SeamlessM4T v3 da Meta traduz 200 idiomas com qualidade indistinguível de tradutores humanos",
+    summary: "A Meta AI lançou o SeamlessM4T v3, modelo de tradução que suporta 200 idiomas incluindo 47 idiomas indígenas sul-americanos. Em avaliação humana cega, as traduções foram classificadas como equivalentes ou superiores a tradutores profissionais em 85% dos pares de idiomas testados. O modelo processa texto, fala e video com sincronização labial. Disponível via API gratuita para projetos de preservação de línguas ameaçadas. Integração com WhatsApp Business anunciada para Q3.",
+    originalDate: "18 abr 2026, 06:00",
+    url: "https://dev.to"
+  },
+  {
+    pos: 7, source: "devto",
+    title: "DeepFace Live 3.0 detecta deepfakes em chamadas de vídeo em tempo real com 97% de precisão",
+    summary: "A empresa de segurança Sensity lançou ferramenta que detecta rostos sintéticos em chamadas de vídeo ao vivo com latência de 80ms e precisão de 97%. O software integra com Zoom, Teams e Google Meet via plugin. Bancos e sistemas de verificação de identidade já demonstraram interesse para KYC. A licença corporativa custa $15/usuário/mês. Uma versão gratuita pessoal está disponível com limite de 2 horas mensais.",
+    originalDate: "17 abr 2026, 23:00",
+    url: "https://dev.to"
+  },
+  {
+    pos: 8, source: "techcrunch",
+    title: "Relatório McKinsey: 40% das tarefas de escritório serão automatizadas por IA até 2030",
+    summary: "Novo relatório da McKinsey Global Institute estima que 40% das tarefas típicas de trabalho de escritório serão automatizadas por IA até 2030, afetando principalmente funções de análise de dados, suporte ao cliente e geração de relatórios. O relatório diferencia automatização de eliminação de empregos, argumentando que a maioria dos trabalhadores terá suas funções transformadas, não extintas. Recomenda investimento urgente em requalificação profissional. Economistas divergem sobre o impacto líquido no emprego.",
+    originalDate: "18 abr 2026, 08:00",
+    url: "https://techcrunch.com"
+  },
+  {
+    pos: 9, source: "hn",
+    title: "Legalify atinge valuation de US$1B com IA que automatiza 80% do trabalho jurídico de rotina",
+    summary: "A startup americana Legalify atingiu status de unicórnio após rodada série C de $150M. O sistema de IA automatiza contratos, due diligence, petições de rotina e compliance, reduzindo custos de escritórios jurídicos em até 70% para tarefas padronizadas. Mais de 400 escritórios de advocacia usam a plataforma. A empresa anuncia expansão para Brasil, México e Espanha com modelos treinados em legislação local. Ordem dos Advogados debate regulamentação do uso.",
+    originalDate: "18 abr 2026, 14:00",
+    url: "https://news.ycombinator.com"
+  },
+  {
+    pos: 10, source: "arxiv",
+    title: "Viés temporal em LLMs: modelos subestimam sistematicamente eventos futuros por fator de 3x",
+    summary: "Pesquisadores da Oxford publicaram estudo mostrando que todos os LLMs testados apresentam viés sistemático de 'presentismo' — subestimam a probabilidade e magnitude de eventos futuros por fator médio de 3x comparado a especialistas humanos calibrados. O viés se mantém independente de prompting e se agrava com o horizonte temporal. Os autores propõem técnica de 'temporal calibration fine-tuning' que reduz o viés em 60%. Implicações para uso de IA em planejamento estratégico são discutidas.",
+    originalDate: "17 abr 2026, 18:00",
+    url: "https://arxiv.org"
+  }]
+
+}];
+
+
+const SOURCE_CONFIG = {
+  arxiv: { label: "arXiv", cls: "pill-arxiv", dot: "#4A55D0" },
+  hn: { label: "Hacker News", cls: "pill-hn", dot: "#C04A00" },
+  devto: { label: "dev.to", cls: "pill-devto", dot: "#2A7A3A" },
+  techcrunch: { label: "TechCrunch", cls: "pill-techcrunch", dot: "#7C3AAD" },
+  mit: { label: "MIT Tech Review", cls: "pill-mit", dot: "#0A5FA8" }
+};
+
+// ─── SOURCE PILL ───────────────────────────────────────────────────────────
+function SourcePill({ source }) {
+  const cfg = SOURCE_CONFIG[source] || { label: source, cls: "pill-hn", dot: "#999" };
+  return (
+    <span className={`pill ${cfg.cls}`}>
+      <span style={{ width: 5, height: 5, borderRadius: '50%', background: cfg.dot, display: 'inline-block' }} />
+      {cfg.label}
+    </span>);
+
+}
+
+// ─── HEADER ────────────────────────────────────────────────────────────────
+function Header({ onBack, title }) {
+  return (
+    <header style={{
+      position: 'sticky', top: 0, zIndex: 100,
+      background: 'rgba(249,248,245,0.88)',
+      backdropFilter: 'blur(16px)',
+      borderBottom: '1px solid var(--border)'
+    }}>
+      <div style={{
+        maxWidth: 760, margin: '0 auto',
+        padding: '0 24px',
+        height: 60,
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        gap: 16
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          {onBack &&
+          <button onClick={onBack} style={{
+            background: 'none', border: 'none', cursor: 'pointer',
+            color: 'var(--text-secondary)', padding: '6px 8px',
+            borderRadius: 8, display: 'flex', alignItems: 'center', gap: 6,
+            fontSize: 13, fontFamily: 'var(--font-sans)',
+            transition: 'all 0.15s'
+          }}
+          onMouseEnter={(e) => {e.currentTarget.style.background = 'var(--bg-hover)';e.currentTarget.style.color = 'var(--text-primary)';}}
+          onMouseLeave={(e) => {e.currentTarget.style.background = 'none';e.currentTarget.style.color = 'var(--text-secondary)';}}>
+            
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              Feed
+            </button>
+          }
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{
+              width: 28, height: 28, borderRadius: 8,
+              background: 'var(--accent)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center'
+            }}>
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <path d="M7 1L9 5.5H13.5L10 8.5L11.5 13L7 10.5L2.5 13L4 8.5L0.5 5.5H5L7 1Z" fill="white" />
+              </svg>
+            </div>
+            <span style={{ fontFamily: 'var(--font-serif)', fontSize: 17, color: 'var(--text-primary)', fontWeight: 400 }}>
+              Daily <em>AI</em> Digest
+            </span>
+          </div>
+        </div>
+
+        {title &&
+        <span style={{ fontSize: 13, color: 'var(--text-muted)', fontWeight: 400 }}>
+            {title}
+          </span>
+        }
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{
+            width: 7, height: 7, borderRadius: '50%',
+            background: '#22C55E',
+            boxShadow: '0 0 0 2px #DCFCE7',
+            animation: 'pulse 2.5s infinite'
+          }} />
+          <span style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 500 }}>
+            Atualizado 07:00
+          </span>
+        </div>
+      </div>
+    </header>);
+
+}
+
+// ─── HOME VIEW ─────────────────────────────────────────────────────────────
+function HomeView({ onSelectDigest }) {
+  return (
+    <div>
+      <Header />
+      <main style={{ maxWidth: 760, margin: '0 auto', padding: '0 24px 80px', height: "1477px", width: "782px" }}>
+
+        {/* Hero */}
+        <div className="animate-fadeUp" style={{ padding: '52px 0 36px', borderBottom: '1px solid var(--border)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+            <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--accent)' }}>
+              Inteligência Artificial
+            </span>
+            <span style={{ color: 'var(--border-strong)', fontSize: 12 }}>·</span>
+            <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-muted)', letterSpacing: '0.04em' }}>
+              Top 10 artigos do dia, todos os dias às 07:00
+            </span>
+          </div>
+          <h1 style={{
+            fontFamily: 'var(--font-serif)', fontSize: 'clamp(32px, 5vw, 46px)',
+            fontWeight: 400, lineHeight: 1.15,
+            color: 'var(--text-primary)',
+            letterSpacing: '-0.01em'
+          }}>
+            O que importa em IA,<br />
+            <em style={{ color: 'var(--accent)' }}>curado todo dia para você.</em>
+          </h1>
+        </div>
+
+        {/* Feed */}
+        <div style={{ marginTop: 8 }}>
+          {DIGESTS.map((digest, i) =>
+          <DigestCard
+            key={digest.id}
+            digest={digest}
+            index={i}
+            onClick={() => onSelectDigest(digest)} />
+
+          )}
+        </div>
+      </main>
+    </div>);
+
+}
+
+// ─── DIGEST CARD ───────────────────────────────────────────────────────────
+function DigestCard({ digest, index, onClick }) {
+  const [hovered, setHovered] = useState(false);
+  const titles = digest.summary.split(' · ');
+
+  return (
+    <article
+      className="animate-fadeUp"
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        padding: '28px 0',
+        borderBottom: '1px solid var(--border)',
+        cursor: 'pointer',
+        animationDelay: `${index * 60}ms`,
+        transition: 'transform 0.2s ease',
+        transform: hovered ? 'translateX(4px)' : 'translateX(0)'
+      }}>
+      
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 20 }}>
+        {/* Date column */}
+        <div style={{
+          minWidth: 56,
+          display: 'flex', flexDirection: 'column', alignItems: 'center',
+          paddingTop: 3
+        }}>
+          {digest.isToday &&
+          <span style={{
+            fontSize: 9, fontWeight: 700, letterSpacing: '0.1em',
+            textTransform: 'uppercase', color: 'white',
+            background: 'var(--accent)',
+            padding: '2px 6px', borderRadius: 4,
+            marginBottom: 6
+          }}>Hoje</span>
+          }
+          <span style={{
+            fontFamily: 'var(--font-serif)',
+            fontSize: 28, fontWeight: 400,
+            color: hovered ? 'var(--accent)' : 'var(--text-primary)',
+            lineHeight: 1,
+            transition: 'color 0.2s'
+          }}>
+            {digest.id.split('-')[2]}
+          </span>
+          <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 500, marginTop: 2 }}>
+            {['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'][parseInt(digest.id.split('-')[1]) - 1]}
+          </span>
+        </div>
+
+        {/* Content */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+            <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-muted)' }}>
+              {digest.dateShort}
+            </span>
+            <span style={{ color: 'var(--border-strong)', fontSize: 11 }}>·</span>
+            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+              Publicado às 07:00
+            </span>
+            <span style={{ color: 'var(--border-strong)', fontSize: 11 }}>·</span>
+            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+              10 artigos
+            </span>
+          </div>
+
+          {/* Article titles list */}
+          <ol style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 5 }}>
+            {titles.slice(0, 5).map((title, i) =>
+            <li key={i} style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                <span style={{
+                fontSize: 11, fontWeight: 600, color: 'var(--text-muted)',
+                minWidth: 14, opacity: 0.7
+              }}>{i + 1}</span>
+                <span style={{
+                fontSize: 13.5,
+                color: 'var(--text-secondary)',
+                lineHeight: 1.45,
+                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
+              }}>{title}</span>
+              </li>
+            )}
+            {titles.length > 5 &&
+            <li style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 2 }}>
+                <span style={{ minWidth: 14 }} />
+                <span style={{
+                fontSize: 12, color: 'var(--text-muted)',
+                fontStyle: 'italic'
+              }}>+ {titles.length - 5} mais artigos</span>
+              </li>
+            }
+          </ol>
+        </div>
+
+        {/* Arrow */}
+        <div style={{
+          color: hovered ? 'var(--accent)' : 'var(--border-strong)',
+          transition: 'all 0.2s',
+          transform: hovered ? 'translateX(3px)' : 'translateX(0)',
+          paddingTop: 4,
+          flexShrink: 0
+        }}>
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <path d="M6.75 13.5L11.25 9L6.75 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </div>
+      </div>
+    </article>);
+
+}
+
+// ─── DETAIL VIEW ───────────────────────────────────────────────────────────
+function DetailView({ digest, onBack }) {
+  const [expandedPos, setExpandedPos] = useState(null);
+
+  return (
+    <div>
+      <Header onBack={onBack} title={digest.dateShort} />
+      <main style={{ maxWidth: 760, margin: '0 auto', padding: '0 24px 80px' }}>
+
+        {/* Day header */}
+        <div className="animate-fadeUp" style={{ padding: '44px 0 36px', borderBottom: '1px solid var(--border)' }}>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 10 }}>
+            {digest.isToday &&
+            <span style={{
+              fontSize: 10, fontWeight: 700, letterSpacing: '0.08em',
+              textTransform: 'uppercase', color: 'white',
+              background: 'var(--accent)', padding: '3px 8px', borderRadius: 4
+            }}>Hoje</span>
+            }
+            <span style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 500 }}>
+              Publicado em {digest.publishedAt}
+            </span>
+          </div>
+          <h1 style={{
+            fontFamily: 'var(--font-serif)', fontSize: 'clamp(26px, 4vw, 36px)',
+            fontWeight: 400, lineHeight: 1.2, color: 'var(--text-primary)',
+            letterSpacing: '-0.01em', marginBottom: 14
+          }}>
+            Digest de {digest.date}
+          </h1>
+          <p style={{
+            fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.65,
+            maxWidth: 560
+          }}>
+            Os 10 artigos mais relevantes sobre inteligência artificial das últimas 24 horas, selecionados e resumidos automaticamente.
+          </p>
+        </div>
+
+        {/* Articles */}
+        <div style={{ marginTop: 4 }}>
+          {digest.articles.map((article, i) =>
+          <ArticleRow
+            key={article.pos}
+            article={article}
+            index={i}
+            expanded={expandedPos === article.pos}
+            onToggle={() => setExpandedPos(expandedPos === article.pos ? null : article.pos)} />
+
+          )}
+        </div>
+      </main>
+    </div>);
+
+}
+
+// ─── ARTICLE ROW ───────────────────────────────────────────────────────────
+function ArticleRow({ article, index, expanded, onToggle }) {
+  const [hovered, setHovered] = useState(false);
+  const isTop3 = article.pos <= 3;
+
+  return (
+    <article
+      className="animate-slideIn"
+      style={{
+        borderBottom: '1px solid var(--border)',
+        animationDelay: `${index * 50}ms`
+      }}>
+      
+      {/* Row header — always visible */}
+      <div
+        onClick={onToggle}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        style={{
+          display: 'flex', alignItems: 'flex-start', gap: 16,
+          padding: '22px 0',
+          cursor: 'pointer',
+          background: hovered && !expanded ? 'transparent' : 'transparent'
+        }}>
+        
+        {/* Position badge */}
+        <div style={{
+          minWidth: 36, height: 36, borderRadius: 10,
+          background: isTop3 ?
+          article.pos === 1 ? 'var(--accent)' : article.pos === 2 ? 'var(--accent-mid)' : 'var(--accent-light)' :
+          'var(--bg-hover)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          flexShrink: 0,
+          marginTop: 1,
+          border: isTop3 && article.pos !== 1 ? '1px solid var(--border)' : 'none'
+        }}>
+          <span style={{
+            fontFamily: 'var(--font-serif)',
+            fontSize: article.pos >= 10 ? 14 : 16,
+            fontWeight: 400,
+            color: article.pos === 1 ? 'white' :
+            article.pos <= 3 ? 'var(--accent)' :
+            'var(--text-muted)'
+          }}>
+            {article.pos}
+          </span>
+        </div>
+
+        {/* Main content */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
+            <SourcePill source={article.source} />
+            <span style={{ fontSize: 11.5, color: 'var(--text-muted)' }}>
+              {article.originalDate}
+            </span>
+          </div>
+          <h2 style={{
+            fontFamily: 'var(--font-serif)',
+            fontSize: 17,
+            fontWeight: 400,
+            lineHeight: 1.4,
+            color: hovered ? 'var(--accent)' : 'var(--text-primary)',
+            transition: 'color 0.15s',
+            letterSpacing: '-0.005em'
+          }}>
+            {article.title}
+          </h2>
+        </div>
+
+        {/* Expand arrow */}
+        <div style={{
+          color: expanded ? 'var(--accent)' : 'var(--border-strong)',
+          transition: 'all 0.2s',
+          transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)',
+          flexShrink: 0, paddingTop: 6
+        }}>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M5 12L9 8L5 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </div>
+      </div>
+
+      {/* Expanded body */}
+      {expanded &&
+      <div className="animate-fadeIn" style={{
+        padding: '0 0 24px 52px'
+      }}>
+          <div style={{
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border)',
+          borderRadius: 14,
+          padding: '20px 24px',
+          borderRadius: 14
+        }}>
+            <p style={{
+            fontSize: 14, lineHeight: 1.75,
+            color: 'var(--text-secondary)',
+            marginBottom: 18
+          }}>
+              {article.summary}
+            </p>
+            <a
+            href={article.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              fontSize: 13, fontWeight: 500,
+              color: 'var(--accent)',
+              textDecoration: 'none',
+              padding: '7px 14px',
+              background: 'var(--accent-light)',
+              borderRadius: 8,
+              transition: 'all 0.15s',
+              border: '1px solid transparent'
+            }}
+            onMouseEnter={(e) => {e.currentTarget.style.border = '1px solid var(--accent-mid)';}}
+            onMouseLeave={(e) => {e.currentTarget.style.border = '1px solid transparent';}}>
+            
+              Ler artigo original
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                <path d="M2 10L10 2M10 2H4M10 2V8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </a>
+          </div>
+        </div>
+      }
+    </article>);
+
+}
+
+// ─── TWEAKS PANEL ──────────────────────────────────────────────────────────
+function TweaksPanel({ visible, tweaks, setTweaks }) {
+  if (!visible) return null;
+  const update = (key, val) => {
+    const next = { ...tweaks, [key]: val };
+    setTweaks(next);
+    window.parent.postMessage({ type: '__edit_mode_set_keys', edits: next }, '*');
+    if (key === 'darkMode') {
+      document.documentElement.setAttribute('data-dark', val ? '1' : '');
+    }
+  };
+
+  return (
+    <div style={{
+      position: 'fixed', bottom: 24, right: 24, zIndex: 1000,
+      background: 'var(--bg-card)',
+      border: '1px solid var(--border)',
+      borderRadius: 16,
+      padding: '20px 20px',
+      width: 240,
+      boxShadow: 'var(--shadow-lg)',
+      fontFamily: 'var(--font-sans)'
+    }}>
+      <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 16 }}>Tweaks</div>
+      
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
+          <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Modo escuro</span>
+          <Toggle checked={tweaks.darkMode} onChange={(v) => update('darkMode', v)} />
+        </label>
+        <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
+          <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Feed compacto</span>
+          <Toggle checked={tweaks.compactFeed} onChange={(v) => update('compactFeed', v)} />
+        </label>
+        <div>
+          <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 8 }}>Cor de destaque</div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            {[
+            ['oklch(63% 0.16 40)', '#D97757'],
+            ['oklch(58% 0.18 260)', '#4A55D0'],
+            ['oklch(55% 0.16 160)', '#2A7A5A'],
+            ['oklch(55% 0.18 310)', '#9B2EA8']].
+            map(([val, hex]) =>
+            <button
+              key={val}
+              onClick={() => {
+                update('accentColor', val);
+                document.documentElement.style.setProperty('--accent', val);
+              }}
+              style={{
+                width: 26, height: 26, borderRadius: '50%',
+                background: hex, border: tweaks.accentColor === val ? '2px solid var(--text-primary)' : '2px solid transparent',
+                cursor: 'pointer',
+                outline: 'none',
+                boxShadow: tweaks.accentColor === val ? '0 0 0 3px var(--bg-card), 0 0 0 4px ' + hex : 'none',
+                transition: 'all 0.15s'
+              }} />
+
+            )}
+          </div>
+        </div>
+      </div>
+    </div>);
+
+}
+
+function Toggle({ checked, onChange }) {
+  return (
+    <div
+      onClick={() => onChange(!checked)}
+      style={{
+        width: 36, height: 20, borderRadius: 10,
+        background: checked ? 'var(--accent)' : 'var(--border-strong)',
+        position: 'relative', cursor: 'pointer',
+        transition: 'background 0.2s',
+        flexShrink: 0
+      }}>
+      
+      <div style={{
+        position: 'absolute', top: 2,
+        left: checked ? 18 : 2,
+        width: 16, height: 16, borderRadius: '50%',
+        background: 'white',
+        transition: 'left 0.2s',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
+      }} />
+    </div>);
+
+}
+
+// ─── DARK MODE STYLES ──────────────────────────────────────────────────────
+const darkStyles = `
+  [data-dark="1"] {
+    --bg: #1A1917;
+    --bg-card: #222120;
+    --bg-hover: #2A2927;
+    --text-primary: #F0EEE8;
+    --text-secondary: #B0A898;
+    --text-muted: #7A736A;
+    --border: #302E2B;
+    --border-strong: #3E3B37;
+    --accent-light: oklch(20% 0.06 40);
+    --accent-mid: oklch(45% 0.12 40);
+  }
+`;
+
+// ─── APP ───────────────────────────────────────────────────────────────────
+function App() {
+  const [view, setView] = useState(() => {
+    const saved = localStorage.getItem('dai-view');
+    if (saved) {
+      try {return JSON.parse(saved);} catch {return { type: 'home' };}
+    }
+    return { type: 'home' };
+  });
+  const [tweaks, setTweaks] = useState(TWEAK_DEFAULTS);
+  const [tweakVisible, setTweakVisible] = useState(false);
+
+  // Persist view
+  useEffect(() => {
+    localStorage.setItem('dai-view', JSON.stringify(view));
+  }, [view]);
+
+  // Apply accent color
+  useEffect(() => {
+    document.documentElement.style.setProperty('--accent', tweaks.accentColor);
+    document.documentElement.setAttribute('data-dark', tweaks.darkMode ? '1' : '');
+  }, [tweaks]);
+
+  // Tweaks toggle
+  useEffect(() => {
+    window.parent.postMessage({ type: '__edit_mode_available' }, '*');
+    const handler = (e) => {
+      if (e.data?.type === '__activate_edit_mode') setTweakVisible(true);
+      if (e.data?.type === '__deactivate_edit_mode') setTweakVisible(false);
+    };
+    window.addEventListener('message', handler);
+    return () => window.removeEventListener('message', handler);
+  }, []);
+
+  const handleSelectDigest = (digest) => {
+    setView({ type: 'detail', digestId: digest.id });
+    window.scrollTo({ top: 0 });
+  };
+  const handleBack = () => {
+    setView({ type: 'home' });
+    window.scrollTo({ top: 0 });
+  };
+
+  const currentDigest = view.type === 'detail' ?
+  DIGESTS.find((d) => d.id === view.digestId) :
+  null;
+
+  return (
+    <>
+      <style>{darkStyles}</style>
+      {view.type === 'home' ?
+      <HomeView onSelectDigest={handleSelectDigest} /> :
+      currentDigest ?
+      <DetailView digest={currentDigest} onBack={handleBack} /> :
+      <HomeView onSelectDigest={handleSelectDigest} />
+      }
+      <TweaksPanel visible={tweakVisible} tweaks={tweaks} setTweaks={setTweaks} />
+    </>);
+
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
