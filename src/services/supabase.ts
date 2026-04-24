@@ -37,6 +37,7 @@ export async function saveDigest(articles: Article[]): Promise<void> {
   const articleRows = articles.map((a) => ({
     url: a.url,
     title: a.title,
+    translated_title: a.translatedTitle ?? null,
     source: a.source,
     summary: a.summary ?? null,
     score: a.score ?? null,
@@ -58,6 +59,8 @@ export async function saveDigest(articles: Article[]): Promise<void> {
 
   if (digestError) throw digestError;
 
+  await supabase.from('digest_articles').delete().eq('digest_id', digestData.id);
+
   const digestArticleRows = (upsertedArticles ?? []).map((row: { id: string; url: string }, index: number) => ({
     digest_id: digestData.id,
     article_id: row.id,
@@ -66,7 +69,7 @@ export async function saveDigest(articles: Article[]): Promise<void> {
 
   const { error: joinError } = await supabase
     .from('digest_articles')
-    .upsert(digestArticleRows, { onConflict: 'digest_id,article_id' });
+    .insert(digestArticleRows);
 
   if (joinError) throw joinError;
 }
