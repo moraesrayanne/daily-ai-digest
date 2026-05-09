@@ -16,7 +16,7 @@ export class GeminiProvider implements LLMProvider {
     }
 
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: 'gemma-4-9b-it' });
+    const model = genAI.getGenerativeModel({ model: 'gemma-4-31b-it' });
 
     try {
       return await withRetry(
