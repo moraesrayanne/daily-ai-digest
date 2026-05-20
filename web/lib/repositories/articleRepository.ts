@@ -1,8 +1,11 @@
 import { ArticleDetail } from '@/types/digest';
 import { getSupabase } from '@/lib/supabase';
+import { DigestRow, ArticleRow } from '@daily/db';
+
+type ArticleQueryRow = { position: number; articles: Partial<ArticleRow> | null };
 import { formatArticleDate } from '@/lib/formatDate';
 
-function mapArticleRow(row: any): ArticleDetail {
+function mapArticleRow(row: ArticleQueryRow): ArticleDetail {
   return {
     pos: row.position,
     source: row.articles?.source ?? 'hn',
@@ -27,9 +30,9 @@ export async function getArticlesByDate(date: string): Promise<ArticleDetail[]> 
   const { data: articleRows } = await supabase
     .from('digest_articles')
     .select('position, articles(title, translated_title, url, source, summary, published_at)')
-    .eq('digest_id', digest.id)
+    .eq('digest_id', (digest as Pick<DigestRow, 'id'>).id)
     .order('position', { ascending: true })
     .limit(10);
 
-  return (articleRows ?? []).map(mapArticleRow);
+  return ((articleRows ?? []) as ArticleQueryRow[]).map(mapArticleRow);
 }

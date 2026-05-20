@@ -9,8 +9,13 @@ const mockDelete = jest.fn();
 const mockEq = jest.fn();
 const mockFrom = jest.fn();
 
-jest.mock('@supabase/supabase-js', () => ({
-  createClient: jest.fn(() => ({ from: mockFrom })),
+jest.mock('@daily/db', () => ({
+  getSupabaseClient: jest.fn(() => {
+    if (!process.env.SUPABASE_URL) throw new Error('SUPABASE_URL is not set');
+    if (!process.env.SUPABASE_KEY) throw new Error('SUPABASE_KEY is not set');
+    return { from: mockFrom };
+  }),
+  _resetClientForTest: jest.fn(),
 }));
 
 const makeArticle = (id: string): SummarizedArticle => ({

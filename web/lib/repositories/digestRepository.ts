@@ -1,5 +1,8 @@
 import { DigestListItem, DigestDetail, ArticleDetail } from '@/types/digest';
 import { getSupabase } from '@/lib/supabase';
+import { DigestRow, ArticleRow } from '@daily/db';
+
+type ArticleQueryRow = { position: number; articles: Partial<ArticleRow> | null };
 import {
   formatDateLong,
   formatDateShort,
@@ -9,7 +12,7 @@ import {
   isToday,
 } from '@/lib/formatDate';
 
-function mapArticleRow(row: any): ArticleDetail {
+function mapArticleRow(row: ArticleQueryRow): ArticleDetail {
   return {
     pos: row.position,
     source: row.articles?.source ?? 'hn',
@@ -32,7 +35,7 @@ export async function getDigests(): Promise<DigestListItem[]> {
   if (error || !digests) return [];
 
   const results: DigestListItem[] = await Promise.all(
-    digests.map(async (digest) => {
+    (digests as DigestRow[]).map(async (digest) => {
       const { data: articleRows } = await supabase
         .from('digest_articles')
         .select('position, articles(title, translated_title)')
@@ -40,8 +43,8 @@ export async function getDigests(): Promise<DigestListItem[]> {
         .order('position', { ascending: true })
         .limit(10);
 
-      const titles = (articleRows ?? [])
-        .map((row: any) => row.articles?.translated_title ?? row.articles?.title ?? '')
+      const titles = ((articleRows ?? []) as ArticleQueryRow[])
+        .map((row) => row.articles?.translated_title ?? row.articles?.title ?? '')
         .filter(Boolean) as string[];
 
       return {
@@ -73,17 +76,20 @@ export async function getDigestByDate(date: string): Promise<DigestDetail | null
   const { data: articleRows } = await supabase
     .from('digest_articles')
     .select('position, articles(title, translated_title, url, source, summary, published_at)')
-    .eq('digest_id', digest.id)
+    .eq('digest_id', (digest as DigestRow).id)
     .order('position', { ascending: true });
 
-  const articles: ArticleDetail[] = (articleRows ?? []).map(mapArticleRow);
+  const articles: ArticleDetail[] = ((articleRows ?? []) as ArticleQueryRow[]).map(
+    mapArticleRow
+  );
 
+  const d = digest as DigestRow;
   return {
-    date: digest.date,
-    dateFormatted: formatDateLong(digest.date),
-    dateShort: formatDateShort(digest.date),
-    sentAt: digest.sent_at ? formatSentAt(digest.sent_at) : '',
-    isToday: isToday(digest.date),
+    date: d.date,
+    dateFormatted: formatDateLong(d.date),
+    dateShort: formatDateShort(d.date),
+    sentAt: d.sent_at ? formatSentAt(d.sent_at) : '',
+    isToday: isToday(d.date),
     articles,
   };
 }
@@ -99,7 +105,7 @@ export async function getDigestSentAt(date: string): Promise<string> {
 
   if (error || !data) return '';
 
-  return formatSentAt(data.sent_at);
+  return formatSentAt((data as Pick<DigestRow, 'sent_at'>).sent_at);
 }
 
 export async function getLastUpdated(): Promise<string | undefined> {
@@ -114,5 +120,5 @@ export async function getLastUpdated(): Promise<string | undefined> {
 
   if (error || !data) return undefined;
 
-  return formatTimeOnly(data.sent_at);
+  return formatTimeOnly((data as Pick<DigestRow, 'sent_at'>).sent_at);
 }

@@ -1,37 +1,23 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { getSupabaseClient, _resetClientForTest, ArticleRow, DigestRow } from '@daily/db';
 import { SummarizedArticle } from '../types';
 
-let _client: SupabaseClient | null = null;
-
-function getClient(): SupabaseClient {
-  if (_client) return _client;
-  const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_KEY;
-  if (!url) throw new Error('SUPABASE_URL is not set');
-  if (!key) throw new Error('SUPABASE_KEY is not set');
-  _client = createClient(url, key);
-  return _client;
-}
-
-export function _resetClientForTest(): void {
-  _client = null;
-}
+export { _resetClientForTest };
 
 export async function getSentUrls(days = 30): Promise<string[]> {
   const since = new Date();
   since.setDate(since.getDate() - days);
 
-  const { data, error } = await getClient()
+  const { data, error } = await getSupabaseClient()
     .from('articles')
     .select('url')
     .gte('created_at', since.toISOString());
 
   if (error) throw error;
-  return (data ?? []).map((row: { url: string }) => row.url);
+  return (data ?? []).map((row: Pick<ArticleRow, 'url'>) => row.url);
 }
 
 export async function saveDigest(articles: SummarizedArticle[]): Promise<void> {
-  const supabase = getClient();
+  const supabase = getSupabaseClient();
   const today = new Date().toISOString().slice(0, 10);
 
   const articleRows = articles.map((a) => ({
@@ -62,11 +48,11 @@ export async function saveDigest(articles: SummarizedArticle[]): Promise<void> {
 
   if (digestError) throw digestError;
 
-  await supabase.from('digest_articles').delete().eq('digest_id', digestData.id);
+  await supabase.from('digest_articles').delete().eq('digest_id', (digestData as Pick<DigestRow, 'id'>).id);
 
   const digestArticleRows = (upsertedArticles ?? []).map(
-    (row: { id: string; url: string }, index: number) => ({
-      digest_id: digestData.id,
+    (row: Pick<ArticleRow, 'id' | 'url'>, index: number) => ({
+      digest_id: (digestData as Pick<DigestRow, 'id'>).id,
       article_id: row.id,
       position: index + 1,
     })
