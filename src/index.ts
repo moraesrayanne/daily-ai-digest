@@ -3,8 +3,6 @@ import { aggregate } from './services/aggregator';
 import { deduplicate, deduplicateWithHistory } from './services/deduplicator';
 import { rank } from './services/ranker';
 import { summarizeAll } from './services/summarizer';
-import { format } from './services/formatter';
-import { send } from './services/sender';
 import { getSentUrls, saveDigest } from './services/supabase';
 
 function log(step: string, msg: string) {
@@ -37,14 +35,6 @@ async function run() {
     log('summarize', 'start');
     const summarized = await summarizeAll(ranked);
     log('summarize', 'done');
-
-    log('format', 'start');
-    const payload = format(summarized);
-    log('format', `subject: ${payload.subject}`);
-
-    log('send', 'start');
-    await send(payload);
-    log('send', 'email delivered');
 
     log('save', 'start');
     await saveDigest(summarized);
