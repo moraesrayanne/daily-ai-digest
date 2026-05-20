@@ -1,5 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { Article, SummarizedArticle } from '../types';
+import { SummarizedArticle } from '../types';
 
 let _client: SupabaseClient | null = null;
 
@@ -53,7 +53,10 @@ export async function saveDigest(articles: SummarizedArticle[]): Promise<void> {
 
   const { data: digestData, error: digestError } = await supabase
     .from('digests')
-    .upsert({ date: today, article_count: articles.length, sent_at: new Date().toISOString() }, { onConflict: 'date' })
+    .upsert(
+      { date: today, article_count: articles.length, sent_at: new Date().toISOString() },
+      { onConflict: 'date' }
+    )
     .select('id')
     .single();
 
@@ -61,15 +64,15 @@ export async function saveDigest(articles: SummarizedArticle[]): Promise<void> {
 
   await supabase.from('digest_articles').delete().eq('digest_id', digestData.id);
 
-  const digestArticleRows = (upsertedArticles ?? []).map((row: { id: string; url: string }, index: number) => ({
-    digest_id: digestData.id,
-    article_id: row.id,
-    position: index + 1,
-  }));
+  const digestArticleRows = (upsertedArticles ?? []).map(
+    (row: { id: string; url: string }, index: number) => ({
+      digest_id: digestData.id,
+      article_id: row.id,
+      position: index + 1,
+    })
+  );
 
-  const { error: joinError } = await supabase
-    .from('digest_articles')
-    .insert(digestArticleRows);
+  const { error: joinError } = await supabase.from('digest_articles').insert(digestArticleRows);
 
   if (joinError) throw joinError;
 }
