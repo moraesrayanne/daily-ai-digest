@@ -3,7 +3,8 @@ import { Article } from '../../types';
 import { LLMProvider, SummaryResult } from '../types';
 import { withRetry } from '../../lib/retry';
 import { warn } from '../../lib/logger';
-import aiStyle from '../../../config/ai-style.json';
+import { buildPrompt } from './gemini-prompt';
+import { parseResponse, fallbackResult } from './gemini-parser';
 
 const MAX_RETRIES = 3;
 
@@ -25,13 +26,13 @@ export class GeminiProvider implements LLMProvider {
   async summarize(article: Article): Promise<SummaryResult> {
     const model = this.getModel();
     if (!model || process.env.SKIP_SUMMARIZE === 'true' || this.dailyQuotaExhausted) {
-      return this.fallback(article);
+      return fallbackResult(article);
     }
 
     try {
       return await withRetry(
-        () => model.generateContent(this.buildPrompt(article))
-          .then((r: { response: { text: () => string } }) => this.parseResult(r.response.text().trim(), article)),
+        () => model.generateContent(buildPrompt(article))
+          .then((r: { response: { text: () => string } }) => parseResponse(r.response.text().trim(), article)),
         {
           maxAttempts: MAX_RETRIES,
           delayMs: 60_000,
@@ -53,44 +54,10 @@ export class GeminiProvider implements LLMProvider {
         }
       );
     } catch (err) {
-      if (this.dailyQuotaExhausted) return this.fallback(article);
+      if (this.dailyQuotaExhausted) return fallbackResult(article);
       warn('summarizer', `fallback for "${article.title}": ${(err as any)?.message ?? err}`);
-      return this.fallback(article);
+      return fallbackResult(article);
     }
-  }
-
-  private buildPrompt(article: Article): string {
-    return (
-      `Resuma o artigo abaixo em ${aiStyle.language}, tom ${aiStyle.tone}.\n` +
-      `Responda SOMENTE com este JSON, sem mais nada:\n` +
-      `{"title": "<título em português>", "summary": "<2 frases resumindo o artigo>"}\n\n` +
-      `Título: ${article.title}\nURL: ${article.url}`
-    );
-  }
-
-  private parseResult(text: string, article: Article): SummaryResult {
-    const matches = [...text.matchAll(/\{[^{}]*\}/g)];
-    for (let i = matches.length - 1; i >= 0; i--) {
-      try {
-        const parsed = JSON.parse(matches[i][0]);
-        if (parsed.title && parsed.summary) return parsed;
-      } catch { continue; }
-    }
-    try {
-      const json = text.match(/\{[\s\S]*\}/)?.[0];
-      if (json) {
-        const parsed = JSON.parse(json);
-        if (parsed.title && parsed.summary) return parsed;
-      }
-    } catch { /* fallback below */ }
-    return { title: article.title, summary: text.trim() };
-  }
-
-  private fallback(article: Article): SummaryResult {
-    return {
-      title: article.title,
-      summary: 'Resumo indisponível no momento. Clique para ler o artigo completo.',
-    };
   }
 
   private isDaily429(err: unknown): boolean {

@@ -1,0 +1,31 @@
+{
+  "weights": { "recency": 0.3, "trending": 0.4, "relevance": 0.3 },
+  "premiumSourceBonus": 0.5,
+  "topN": 10,
+  "tiers": {
+    "tier1": {
+      "score": 0.35,
+      "pattern": "\\b(GPT-\\d|Claude\\s*\\d|Gemini\\s*[\\d.]+|LLaMA\\s*\\d|Mistral|Grok|o1|o3|AlphaFold|Sora|Gemma|Phi-\\d|DeepSeek|Qwen)\\b|benchmark|state[- ]of[- ]the[- ]art|SOTA|surpass|beats|outperform|breakthrough|emergent|alignment"
+    },
+    "tier2": {
+      "score": 0.2,
+      "pattern": "\\b(OpenAI|Anthropic|DeepMind|Google\\s*AI|Meta\\s*AI|Microsoft\\s*AI|NVIDIA|Trainium|Copilot|Perplexity|Hugging\\s*Face|LLM|GPT|neural|transformer|diffusion|fine.tun|open.source|open-weight)\\b"
+    },
+    "tier3": {
+      "score": 0.1,
+      "pattern": "\\b(AI|ML|machine\\s*learning|deep\\s*learning|language\\s*model|chip|autonomous|robot|inference|agent)\\b"
+    },
+    "lowValue": {
+      "penalty": -0.2,
+      "pattern": "\\b(tutorial|how\\s*to|beginner|getting\\s*started|introduction\\s*to|top\\s*\\d+\\s*(tools|tips|ways)|vs\\s*code|course|learn\\s*(python|javascript))\\b"
+    }
+  },
+  "premiumSources": [
+    "Anthropic",
+    "OpenAI",
+    "Google DeepMind",
+    "Cursor",
+    "The Verge AI",
+    "TechCrunch AI"
+  ]
+}
