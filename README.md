@@ -1,6 +1,6 @@
 # 🤖 Daily AI Digest
 
-> Curadoria automática dos artigos mais relevantes em Inteligência Artificial — entregue no seu e-mail todo dia às 07:00.
+> Curadoria automática dos artigos mais relevantes em Inteligência Artificial — coletados, ranqueados e salvos no Supabase todo dia.
 
 ![Node.js](https://img.shields.io/badge/Node.js-20-339933?style=flat-square&logo=node.js&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white)
@@ -17,21 +17,9 @@ O **Daily AI Digest** é um pipeline automatizado que:
 2. **Remove duplicatas** — tanto dentro da coleta quanto com o histórico dos últimos 30 dias
 3. **Ranqueia** os artigos por relevância, recência e engajamento
 4. **Resume e traduz** os títulos para português com IA (Gemma 4 31B)
-5. **Envia** um e-mail HTML elegante com os 10 melhores artigos do dia
+5. **Salva** o digest no Supabase para consulta e histórico de deduplicação
 
 Tudo isso roda automaticamente via GitHub Actions, sem servidor, sem custo de infraestrutura.
-
----
-
-## Exemplo de e-mail
-
-O digest chega formatado com:
-
-- Badge colorido da fonte (Dev.to, Hacker News, ArXiv etc.)
-- Numeração destacada (🥇 1º, 2º, 3º...)
-- Título traduzido para português
-- Resumo de 2 linhas gerado por IA
-- Botão direto para o artigo original
 
 ---
 
@@ -79,14 +67,6 @@ O digest chega formatado com:
 └──────┬──────┘
        ↓
 ┌─────────────┐
-│   format    │  Monta o HTML do e-mail
-└──────┬──────┘
-       ↓
-┌─────────────┐
-│    send     │  Entrega via SendGrid
-└──────┬──────┘
-       ↓
-┌─────────────┐
 │    save     │  Salva artigos no Supabase (histórico de dedup)
 └─────────────┘
 ```
@@ -115,7 +95,6 @@ Cada artigo recebe uma nota de 0 a 1 com base em três fatores:
 ### Pré-requisitos
 
 - Node.js 20+
-- Conta no [SendGrid](https://sendgrid.com) (envio de e-mail)
 - Conta no [Supabase](https://supabase.com) (histórico)
 - Chave de API do [Google AI Studio](https://aistudio.google.com) (sumarização)
 
@@ -133,11 +112,8 @@ Crie um arquivo `.env` na raiz do projeto:
 
 ```env
 GEMINI_API_KEY=sua_chave_aqui
-SENDGRID_API_KEY=sua_chave_aqui
 SUPABASE_URL=https://xxxx.supabase.co
 SUPABASE_KEY=sua_service_role_key
-EMAIL_TO=destinatario@email.com
-EMAIL_FROM=remetente@seudominio.com
 ```
 
 ### 3. Configure o banco de dados (Supabase)
@@ -188,11 +164,8 @@ Para configurar no seu repositório, adicione os seguintes **Secrets** em _Setti
 | Secret | Descrição |
 |---|---|
 | `GEMINI_API_KEY` | Chave da API do Google AI Studio |
-| `SENDGRID_API_KEY` | Chave da API do SendGrid |
 | `SUPABASE_URL` | URL do projeto Supabase |
 | `SUPABASE_KEY` | Service role key do Supabase |
-| `EMAIL_TO` | E-mail do destinatário |
-| `EMAIL_FROM` | E-mail remetente verificado no SendGrid |
 
 Para disparar manualmente: **Actions → Daily AI Digest → Run workflow**.
 
@@ -219,11 +192,6 @@ daily-ai-digest/
 │   │   ├── types.ts
 │   │   └── providers/
 │   │       └── gemini.ts   # Implementação com Gemma 4 31B
-│   ├── email/              # Camada de abstração do provedor de e-mail
-│   │   ├── factory.ts
-│   │   ├── types.ts
-│   │   └── providers/
-│   │       └── sendgrid.ts
 │   ├── lib/
 │   │   └── retry.ts        # Utilitário de retry com backoff
 │   ├── services/           # Lógica de negócio
@@ -231,11 +199,7 @@ daily-ai-digest/
 │   │   ├── deduplicator.ts # Filtra artigos repetidos
 │   │   ├── ranker.ts       # Pontua e seleciona os top 10
 │   │   ├── summarizer.ts   # Sumarização via Gemma 4 31B
-│   │   ├── formatter.ts    # Monta o payload do e-mail
-│   │   ├── sender.ts       # Envio via SendGrid
 │   │   └── supabase.ts     # Persistência e histórico
-│   └── templates/
-│       └── email.ts        # Template HTML do e-mail
 └── .github/
     └── workflows/
         └── daily-digest.yml
@@ -288,8 +252,7 @@ npm test
 
 - **TypeScript** — tipagem estática em todo o pipeline
 - **Google AI (Gemma 4 31B)** — sumarização e tradução dos títulos
-- **SendGrid** — entrega de e-mail transacional
-- **Supabase** — histórico de artigos enviados (deduplicação)
+- **Supabase** — histórico de artigos salvos (deduplicação)
 - **GitHub Actions** — agendamento e execução sem servidor
 - **xml2js** — parsing de feeds RSS/Atom
 - **axios** — requisições HTTP
