@@ -1,8 +1,21 @@
 import axios from 'axios';
 import { Article } from '../types';
+import { warn } from '../lib/logger';
 
 const BASE_URL = 'https://www.anthropic.com';
 const NEWS_URL = `${BASE_URL}/news`;
+
+const HTML_ENTITIES: [RegExp, string][] = [
+  [/&amp;/g, '&'],
+  [/&#39;/g, "'"],
+  [/&quot;/g, '"'],
+  [/&lt;/g, '<'],
+  [/&gt;/g, '>'],
+];
+
+function decodeHtmlEntities(text: string): string {
+  return HTML_ENTITIES.reduce((s, [pattern, replacement]) => s.replace(pattern, replacement), text);
+}
 
 export async function fetchArticles(): Promise<Article[]> {
   try {
@@ -15,8 +28,6 @@ export async function fetchArticles(): Promise<Article[]> {
     });
 
     const articles: Article[] = [];
-
-    // Match article links: href="/news/slug" — Anthropic uses Next.js with this pattern
     const linkPattern = /href="(\/news\/[a-z0-9][a-z0-9-]+)"/g;
     const seenUrls = new Set<string>();
     let match: RegExpExecArray | null;
@@ -27,8 +38,6 @@ export async function fetchArticles(): Promise<Article[]> {
       if (seenUrls.has(url)) continue;
       seenUrls.add(url);
 
-      // Extract title: look for text content near this link
-      // Anthropic wraps titles in <h3> or <div> close to the href
       const linkIndex = match.index;
       const surrounding = html.slice(Math.max(0, linkIndex - 800), linkIndex + 800);
 
@@ -39,9 +48,7 @@ export async function fetchArticles(): Promise<Article[]> {
         surrounding.match(/<div[^>]*class="[^"]*title[^"]*"[^>]*>([^<]{10,200})<\/div>/) ??
         surrounding.match(/<span[^>]*class="[^"]*heading[^"]*"[^>]*>([^<]{10,200})<\/span>/);
 
-      const rawTitle = titleMatch?.[1]?.trim() ?? '';
-      const title = rawTitle.replace(/&amp;/g, '&').replace(/&#39;/g, "'").replace(/&quot;/g, '"').trim();
-
+      const title = decodeHtmlEntities(titleMatch?.[1]?.trim() ?? '');
       if (!title || title.length < 10) continue;
 
       articles.push({
@@ -59,7 +66,7 @@ export async function fetchArticles(): Promise<Article[]> {
 
     return articles;
   } catch (err) {
-    console.warn('[anthropic] failed to fetch news:', (err as any)?.message ?? err);
+    warn('anthropic', `failed to fetch news: ${(err as any)?.message ?? err}`);
     return [];
   }
 }

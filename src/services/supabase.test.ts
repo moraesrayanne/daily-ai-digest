@@ -1,18 +1,19 @@
 import { getSentUrls, saveDigest, _resetClientForTest } from './supabase';
-import { Article } from '../types';
+import { SummarizedArticle } from '../types';
 
 const mockSelect = jest.fn();
 const mockGte = jest.fn();
 const mockUpsert = jest.fn();
-const mockSingle = jest.fn();
-
+const mockInsert = jest.fn();
+const mockDelete = jest.fn();
+const mockEq = jest.fn();
 const mockFrom = jest.fn();
 
 jest.mock('@supabase/supabase-js', () => ({
   createClient: jest.fn(() => ({ from: mockFrom })),
 }));
 
-const makeArticle = (id: string): Article => ({
+const makeArticle = (id: string): SummarizedArticle => ({
   id,
   title: `Article ${id}`,
   url: `https://example.com/${id}`,
@@ -21,6 +22,7 @@ const makeArticle = (id: string): Article => ({
   views: 0,
   comments: 0,
   summary: 'Summary',
+  translatedTitle: `Artigo ${id}`,
   score: 0.8,
 });
 
@@ -73,6 +75,9 @@ describe('saveDigest', () => {
   beforeEach(() => {
     process.env.SUPABASE_URL = 'https://fake.supabase.co';
     process.env.SUPABASE_KEY = 'fake-key';
+    mockEq.mockResolvedValue({ error: null });
+    mockDelete.mockReturnValue({ eq: mockEq });
+    mockInsert.mockResolvedValue({ error: null });
   });
 
   afterEach(() => {
@@ -94,17 +99,17 @@ describe('saveDigest', () => {
         single: jest.fn().mockResolvedValue({ data: { id: 'digest-uuid' }, error: null }),
       }),
     };
-    const joinUpsertResult = Promise.resolve({ error: null });
 
     mockUpsert
       .mockReturnValueOnce(articleUpsertChain)
-      .mockReturnValueOnce(digestUpsertChain)
-      .mockReturnValueOnce(joinUpsertResult);
+      .mockReturnValueOnce(digestUpsertChain);
 
-    mockFrom.mockReturnValue({ upsert: mockUpsert });
+    mockFrom.mockReturnValue({ upsert: mockUpsert, delete: mockDelete, insert: mockInsert });
 
     await expect(saveDigest([makeArticle('1')])).resolves.toBeUndefined();
-    expect(mockUpsert).toHaveBeenCalledTimes(3);
+    expect(mockUpsert).toHaveBeenCalledTimes(2);
+    expect(mockDelete).toHaveBeenCalledTimes(1);
+    expect(mockInsert).toHaveBeenCalledTimes(1);
   });
 
   it('throws when article upsert fails', async () => {
@@ -112,7 +117,7 @@ describe('saveDigest', () => {
       select: jest.fn().mockResolvedValue({ data: null, error: new Error('article error') }),
     };
     mockUpsert.mockReturnValueOnce(articleUpsertChain);
-    mockFrom.mockReturnValue({ upsert: mockUpsert });
+    mockFrom.mockReturnValue({ upsert: mockUpsert, delete: mockDelete, insert: mockInsert });
 
     await expect(saveDigest([makeArticle('1')])).rejects.toThrow('article error');
   });

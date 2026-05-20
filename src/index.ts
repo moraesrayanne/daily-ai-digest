@@ -4,10 +4,7 @@ import { deduplicate, deduplicateWithHistory } from './services/deduplicator';
 import { rank } from './services/ranker';
 import { summarizeAll } from './services/summarizer';
 import { getSentUrls, saveDigest } from './services/supabase';
-
-function log(step: string, msg: string) {
-  console.log(`[${step}] ${msg}`);
-}
+import { log, warn } from './lib/logger';
 
 async function run() {
   try {
@@ -21,7 +18,7 @@ async function run() {
     log('deduplicate', `${unique.length} articles after dedup`);
 
     if (unique.length < 10) {
-      console.warn(`[deduplicate] warning: only ${unique.length} articles available (expected 10)`);
+      warn('deduplicate', `only ${unique.length} articles available (expected 10)`);
     }
 
     if (unique.length === 0) {

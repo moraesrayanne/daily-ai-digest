@@ -1,5 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { Article } from '../types';
+import { Article, SummarizedArticle } from '../types';
 
 let _client: SupabaseClient | null = null;
 
@@ -30,7 +30,7 @@ export async function getSentUrls(days = 30): Promise<string[]> {
   return (data ?? []).map((row: { url: string }) => row.url);
 }
 
-export async function saveDigest(articles: Article[]): Promise<void> {
+export async function saveDigest(articles: SummarizedArticle[]): Promise<void> {
   const supabase = getClient();
   const today = new Date().toISOString().slice(0, 10);
 

@@ -16,10 +16,10 @@ interface HNStory {
 export async function fetchArticles(): Promise<Article[]> {
   try {
     const { data: ids } = await axios.get<number[]>(`${BASE}/topstories.json`);
-    const top30 = ids.slice(0, 100);
+    const topIds = ids.slice(0, 100);
 
     const stories = await Promise.all(
-      top30.map((id) =>
+      topIds.map((id) =>
         axios
           .get<HNStory>(`${BASE}/item/${id}.json`)
           .then((r) => r.data)
