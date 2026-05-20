@@ -38,6 +38,7 @@ export class GeminiProvider implements LLMProvider {
             const status = (err as any)?.status;
             const wait = status === 503 ? 10_000 : this.retryDelayMs(err);
             console.warn(`[summarizer] ${status} error — waiting ${Math.round(wait / 1000)}s (attempt ${attempt}/${MAX_RETRIES})`);
+            return wait;
           },
         }
       );
