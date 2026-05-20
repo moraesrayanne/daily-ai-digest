@@ -1,6 +1,0 @@
-{
-  "active": "sendgrid",
-  "providers": [
-    { "name": "sendgrid", "active": true }
-  ]
-}
