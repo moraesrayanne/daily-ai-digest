@@ -7,4 +7,5 @@ module.exports = {
   coverageThreshold: {
     global: { lines: 80 },
   },
+  coverageReporters: ['text-summary', 'lcov'],
 };
