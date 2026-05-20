@@ -7,6 +7,11 @@
 - Branch naming: `<type>/<short-description>` (e.g. `feat/skip-summarize-dryrun`, `fix/env-validation`, `chore/update-deps`)
 - Types mirror Conventional Commits: `feat`, `fix`, `chore`, `refactor`, `test`, `docs`, `ci`
 - Wait for the user to review and merge the PR before moving on.
+- PR description must follow this structure:
+  - **What does this PR do?** — brief summary of the change
+  - **Why is this change necessary?** — motivation or context
+  - **Main changes** — bullet list of the key modifications
+  - **Evidence** — screenshots, logs, or test output (if applicable)
 
 ## Commit Convention
 
