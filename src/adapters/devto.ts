@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { Article } from '../types';
+import { withErrorBoundary } from '../lib/error-boundary';
 
 interface DevToArticle {
   id: number;
@@ -11,7 +12,7 @@ interface DevToArticle {
 }
 
 export async function fetchArticles(): Promise<Article[]> {
-  try {
+  return withErrorBoundary('devto', async () => {
     const response = await axios.get<DevToArticle[]>(
       'https://dev.to/api/articles?tag=ai&per_page=30'
     );
@@ -24,7 +25,5 @@ export async function fetchArticles(): Promise<Article[]> {
       views: item.page_views_count ?? 0,
       comments: item.comments_count ?? 0,
     }));
-  } catch {
-    return [];
-  }
+  });
 }

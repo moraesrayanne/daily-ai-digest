@@ -2,6 +2,7 @@ import axios from 'axios';
 import { parseStringPromise } from 'xml2js';
 import { Article } from '../types';
 import { warn } from '../lib/logger';
+import { withErrorBoundary } from '../lib/error-boundary';
 import sourcesConfig from '../../config/sources.json';
 
 interface RssFeed {
@@ -21,9 +22,7 @@ interface RssItem {
 
 function parseTitle(raw: unknown): string {
   if (!raw) return '';
-  // Plain string
   if (typeof raw === 'string') return raw.replace(/<[^>]+>/g, '').trim();
-  // Atom: { _: 'text', $: { type: 'html' } }
   if (typeof raw === 'object' && (raw as any)._) return String((raw as any)._).replace(/<[^>]+>/g, '').trim();
   return String(raw).replace(/<[^>]+>/g, '').trim();
 }
@@ -42,7 +41,6 @@ function parseDate(item: RssItem): Date {
 function parseLink(item: RssItem): string {
   const link = item.link?.[0];
   if (!link) return '';
-  // Atom feeds wrap link as object: { $: { href } }
   if (typeof link === 'object' && (link as any)?.$?.href) {
     return (link as any).$.href;
   }
@@ -50,7 +48,7 @@ function parseLink(item: RssItem): string {
 }
 
 async function fetchFeed(feed: RssFeed, index: number): Promise<Article[]> {
-  try {
+  return withErrorBoundary(`rss:${feed.name}`, async () => {
     const { data: xml } = await axios.get<string>(feed.url, {
       timeout: 10_000,
       headers: { 'User-Agent': 'Daily-AI-Digest/1.0' },
@@ -58,9 +56,7 @@ async function fetchFeed(feed: RssFeed, index: number): Promise<Article[]> {
 
     const parsed = await parseStringPromise(xml, { explicitArray: true });
 
-    // RSS 2.0
     const rssItems: RssItem[] = parsed?.rss?.channel?.[0]?.item ?? [];
-    // Atom
     const atomItems: RssItem[] = parsed?.feed?.entry ?? [];
     const items = rssItems.length ? rssItems : atomItems;
 
@@ -73,10 +69,7 @@ async function fetchFeed(feed: RssFeed, index: number): Promise<Article[]> {
       views: 0,
       comments: 0,
     })).filter((a) => a.title && a.url);
-  } catch (err) {
-    warn('rss', `failed to fetch ${feed.name}: ${(err as any)?.message ?? err}`);
-    return [];
-  }
+  });
 }
 
 export async function fetchArticles(): Promise<Article[]> {

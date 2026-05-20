@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { Article } from '../types';
-import { warn } from '../lib/logger';
+import { withErrorBoundary } from '../lib/error-boundary';
 
 const BASE_URL = 'https://www.anthropic.com';
 const NEWS_URL = `${BASE_URL}/news`;
@@ -18,7 +18,7 @@ function decodeHtmlEntities(text: string): string {
 }
 
 export async function fetchArticles(): Promise<Article[]> {
-  try {
+  return withErrorBoundary('anthropic', async () => {
     const { data: html } = await axios.get<string>(NEWS_URL, {
       timeout: 10_000,
       headers: {
@@ -65,8 +65,5 @@ export async function fetchArticles(): Promise<Article[]> {
     }
 
     return articles;
-  } catch (err) {
-    warn('anthropic', `failed to fetch news: ${(err as any)?.message ?? err}`);
-    return [];
-  }
+  });
 }
