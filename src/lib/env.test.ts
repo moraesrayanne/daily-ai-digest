@@ -25,4 +25,11 @@ describe('validateEnv', () => {
     delete process.env.SUPABASE_URL;
     expect(() => validateEnv()).toThrow('SUPABASE_URL');
   });
+
+  it('does not throw when SKIP_SUMMARIZE=true even with no vars set', () => {
+    REQUIRED.forEach((k) => delete process.env[k]);
+    process.env.SKIP_SUMMARIZE = 'true';
+    expect(() => validateEnv()).not.toThrow();
+    delete process.env.SKIP_SUMMARIZE;
+  });
 });
