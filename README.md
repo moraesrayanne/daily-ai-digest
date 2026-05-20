@@ -16,7 +16,7 @@ O **Daily AI Digest** é um pipeline automatizado que:
 1. **Agrega** artigos de múltiplas fontes (RSS, APIs públicas, blogs)
 2. **Remove duplicatas** — tanto dentro da coleta quanto com o histórico dos últimos 30 dias
 3. **Ranqueia** os artigos por relevância, recência e engajamento
-4. **Resume e traduz** os títulos para português com IA (Gemma 3 27B)
+4. **Resume e traduz** os títulos para português com IA (Gemma 4 31B)
 5. **Envia** um e-mail HTML elegante com os 10 melhores artigos do dia
 
 Tudo isso roda automaticamente via GitHub Actions, sem servidor, sem custo de infraestrutura.
@@ -75,7 +75,7 @@ O digest chega formatado com:
 └──────┬──────┘
        ↓
 ┌─────────────┐
-│  summarize  │  Gemma 3 27B gera título em PT-BR + resumo de 2 linhas
+│  summarize  │  Gemma 4 31B gera título em PT-BR + resumo de 2 linhas
 └──────┬──────┘
        ↓
 ┌─────────────┐
@@ -211,14 +211,26 @@ daily-ai-digest/
 │   ├── adapters/           # Conectores por fonte
 │   │   ├── devto.ts
 │   │   ├── hackernews.ts
-│   │   ├── arxiv.ts
 │   │   ├── rss.ts
-│   │   └── anthropic.ts
+│   │   ├── anthropic.ts
+│   │   └── registry.ts     # Registro e seleção de adapters ativos
+│   ├── llm/                # Camada de abstração do modelo de linguagem
+│   │   ├── factory.ts
+│   │   ├── types.ts
+│   │   └── providers/
+│   │       └── gemini.ts   # Implementação com Gemma 4 31B
+│   ├── email/              # Camada de abstração do provedor de e-mail
+│   │   ├── factory.ts
+│   │   ├── types.ts
+│   │   └── providers/
+│   │       └── sendgrid.ts
+│   ├── lib/
+│   │   └── retry.ts        # Utilitário de retry com backoff
 │   ├── services/           # Lógica de negócio
 │   │   ├── aggregator.ts   # Orquestra os adapters
 │   │   ├── deduplicator.ts # Filtra artigos repetidos
 │   │   ├── ranker.ts       # Pontua e seleciona os top 10
-│   │   ├── summarizer.ts   # Sumarização via Gemma 3 27B
+│   │   ├── summarizer.ts   # Sumarização via Gemma 4 31B
 │   │   ├── formatter.ts    # Monta o payload do e-mail
 │   │   ├── sender.ts       # Envio via SendGrid
 │   │   └── supabase.ts     # Persistência e histórico
@@ -275,7 +287,7 @@ npm test
 ## Tecnologias
 
 - **TypeScript** — tipagem estática em todo o pipeline
-- **Google AI (Gemma 3 27B)** — sumarização e tradução dos títulos
+- **Google AI (Gemma 4 31B)** — sumarização e tradução dos títulos
 - **SendGrid** — entrega de e-mail transacional
 - **Supabase** — histórico de artigos enviados (deduplicação)
 - **GitHub Actions** — agendamento e execução sem servidor
