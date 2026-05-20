@@ -1,6 +1,7 @@
 {
   "name": "daily-ai-digest",
   "private": true,
+  "packageManager": "pnpm@11.1.3",
   "scripts": {
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm --filter pipeline test",
