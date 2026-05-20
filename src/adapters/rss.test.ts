@@ -2,7 +2,7 @@ import axios from 'axios';
 import { fetchArticles } from './rss';
 
 jest.mock('axios');
-jest.mock('../config/sources.json', () => ({
+jest.mock('../../config/sources.json', () => ({
   rssFeeds: [{ name: 'TestFeed', url: 'https://example.com/rss' }],
 }));
 
