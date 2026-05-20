@@ -50,14 +50,24 @@ export class GeminiProvider implements LLMProvider {
 
   private buildPrompt(article: Article): string {
     return (
-      `Você é um assistente que resume artigos de tecnologia em tom ${aiStyle.tone}, em ${aiStyle.language}.\n` +
-      `Responda APENAS com um JSON válido, sem markdown, sem explicações:\n` +
-      `{"title": "<título traduzido para português>", "summary": "<resumo em exatamente 2 linhas>"}\n\n` +
-      `Título original: ${article.title}\nURL: ${article.url}`
+      `Resuma o artigo abaixo em ${aiStyle.language}, tom ${aiStyle.tone}.\n` +
+      `Responda SOMENTE com este JSON, sem mais nada:\n` +
+      `{"title": "<título em português>", "summary": "<2 frases resumindo o artigo>"}\n\n` +
+      `Título: ${article.title}\nURL: ${article.url}`
     );
   }
 
   private parseResult(text: string, article: Article): SummaryResult {
+    // Thinking models output reasoning before the final answer, so try all flat
+    // JSON objects from last to first to find the final valid response.
+    const matches = [...text.matchAll(/\{[^{}]*\}/g)];
+    for (let i = matches.length - 1; i >= 0; i--) {
+      try {
+        const parsed = JSON.parse(matches[i][0]);
+        if (parsed.title && parsed.summary) return parsed;
+      } catch { continue; }
+    }
+    // Fallback: greedy match for nested JSON structures
     try {
       const json = text.match(/\{[\s\S]*\}/)?.[0];
       if (json) {
