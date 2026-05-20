@@ -3,9 +3,7 @@ import { fetchArticles } from './rss';
 
 jest.mock('axios');
 jest.mock('../../config/sources.json', () => ({
-  rssFeeds: [
-    { name: 'TestFeed', url: 'https://example.com/rss' },
-  ],
+  rssFeeds: [{ name: 'TestFeed', url: 'https://example.com/rss' }],
 }));
 
 const mockedAxios = axios as jest.Mocked<typeof axios>;

@@ -5,12 +5,7 @@ jest.mock('axios');
 const mockedAxios = axios as jest.Mocked<typeof axios>;
 
 const makeHtml = (links: { path: string; title: string }[]) =>
-  links
-    .map(
-      ({ path, title }) =>
-        `<a href="${path}"><h2>${title}</h2></a>`
-    )
-    .join('\n');
+  links.map(({ path, title }) => `<a href="${path}"><h2>${title}</h2></a>`).join('\n');
 
 describe('anthropic adapter', () => {
   afterEach(() => jest.clearAllMocks());
@@ -30,9 +25,7 @@ describe('anthropic adapter', () => {
   });
 
   it('decodes HTML entities in titles', async () => {
-    const html = makeHtml([
-      { path: '/news/ai-safety', title: 'AI &amp; Safety: What&#39;s Next' },
-    ]);
+    const html = makeHtml([{ path: '/news/ai-safety', title: 'AI &amp; Safety: What&#39;s Next' }]);
     mockedAxios.get.mockResolvedValue({ data: html });
 
     const articles = await fetchArticles();
