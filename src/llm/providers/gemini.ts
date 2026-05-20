@@ -2,21 +2,31 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { Article } from '../../types';
 import { LLMProvider, SummaryResult } from '../types';
 import { withRetry } from '../../lib/retry';
+import { warn } from '../../lib/logger';
 import aiStyle from '../../../config/ai-style.json';
 
 const MAX_RETRIES = 3;
 
+type GenerativeModel = ReturnType<GoogleGenerativeAI['getGenerativeModel']>;
+
 export class GeminiProvider implements LLMProvider {
   private dailyQuotaExhausted = false;
+  private _model: GenerativeModel | null = null;
+
+  private getModel(): GenerativeModel | null {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) return null;
+    if (!this._model) {
+      this._model = new GoogleGenerativeAI(apiKey).getGenerativeModel({ model: 'gemma-4-31b-it' });
+    }
+    return this._model;
+  }
 
   async summarize(article: Article): Promise<SummaryResult> {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey || process.env.SKIP_SUMMARIZE === 'true' || this.dailyQuotaExhausted) {
+    const model = this.getModel();
+    if (!model || process.env.SKIP_SUMMARIZE === 'true' || this.dailyQuotaExhausted) {
       return this.fallback(article);
     }
-
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: 'gemma-4-31b-it' });
 
     try {
       return await withRetry(
@@ -28,7 +38,7 @@ export class GeminiProvider implements LLMProvider {
           shouldRetry: (err) => {
             const status = (err as any)?.status;
             if (status === 429 && this.isDaily429(err)) {
-              console.warn('[summarizer] daily quota exhausted — skipping all remaining summaries');
+              warn('summarizer', 'daily quota exhausted — skipping all remaining summaries');
               this.dailyQuotaExhausted = true;
               return false;
             }
@@ -37,14 +47,14 @@ export class GeminiProvider implements LLMProvider {
           onRetry: (err, attempt) => {
             const status = (err as any)?.status;
             const wait = status === 503 ? 10_000 : this.retryDelayMs(err);
-            console.warn(`[summarizer] ${status} error — waiting ${Math.round(wait / 1000)}s (attempt ${attempt}/${MAX_RETRIES})`);
+            warn('summarizer', `${status} error — waiting ${Math.round(wait / 1000)}s (attempt ${attempt}/${MAX_RETRIES})`);
             return wait;
           },
         }
       );
     } catch (err) {
       if (this.dailyQuotaExhausted) return this.fallback(article);
-      console.warn(`[summarizer] fallback for "${article.title}":`, (err as any)?.message ?? err);
+      warn('summarizer', `fallback for "${article.title}": ${(err as any)?.message ?? err}`);
       return this.fallback(article);
     }
   }
@@ -59,8 +69,6 @@ export class GeminiProvider implements LLMProvider {
   }
 
   private parseResult(text: string, article: Article): SummaryResult {
-    // Thinking models output reasoning before the final answer, so try all flat
-    // JSON objects from last to first to find the final valid response.
     const matches = [...text.matchAll(/\{[^{}]*\}/g)];
     for (let i = matches.length - 1; i >= 0; i--) {
       try {
@@ -68,7 +76,6 @@ export class GeminiProvider implements LLMProvider {
         if (parsed.title && parsed.summary) return parsed;
       } catch { continue; }
     }
-    // Fallback: greedy match for nested JSON structures
     try {
       const json = text.match(/\{[\s\S]*\}/)?.[0];
       if (json) {

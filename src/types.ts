@@ -6,13 +6,18 @@ export interface Article {
   publishedAt: Date;
   views: number;
   comments: number;
-  summary?: string;
-  translatedTitle?: string;
-  score?: number;
+}
+
+export interface RankedArticle extends Article {
+  score: number;
+}
+
+export interface SummarizedArticle extends RankedArticle {
+  summary: string;
+  translatedTitle: string;
 }
 
 export interface Digest {
   date: string;
-  articles: Article[];
-  sentAt: Date;
+  articles: SummarizedArticle[];
 }

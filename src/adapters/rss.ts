@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { parseStringPromise } from 'xml2js';
 import { Article } from '../types';
+import { warn } from '../lib/logger';
 import sourcesConfig from '../../config/sources.json';
 
 interface RssFeed {
@@ -73,7 +74,7 @@ async function fetchFeed(feed: RssFeed, index: number): Promise<Article[]> {
       comments: 0,
     })).filter((a) => a.title && a.url);
   } catch (err) {
-    console.warn(`[rss] failed to fetch ${feed.name}:`, (err as any)?.message ?? err);
+    warn('rss', `failed to fetch ${feed.name}: ${(err as any)?.message ?? err}`);
     return [];
   }
 }

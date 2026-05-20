@@ -1,27 +1,17 @@
-import { Article } from '../types';
+import { RankedArticle, SummarizedArticle } from '../types';
 import { getLLMProvider } from '../llm/factory';
+import { log } from '../lib/logger';
 
-export { SummaryResult } from '../llm/types';
-
-const DELAY_BETWEEN_MS = 5000;
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-export async function summarize(article: Article): Promise<string> {
-  const { summary } = await getLLMProvider().summarize(article);
-  return summary;
-}
-
-export async function summarizeAll(articles: Article[]): Promise<Article[]> {
+export async function summarizeAll(articles: RankedArticle[]): Promise<SummarizedArticle[]> {
   const provider = getLLMProvider();
-  const result: Article[] = [];
+  const result: SummarizedArticle[] = [];
 
   for (let i = 0; i < articles.length; i++) {
-    const { title, summary } = await provider.summarize(articles[i]);
-    result.push({ ...articles[i], translatedTitle: title, summary });
-    if (i < articles.length - 1) await sleep(DELAY_BETWEEN_MS);
+    const article = articles[i];
+    log('summarize', `[${i + 1}/${articles.length}] "${article.title}"`);
+    const { title, summary } = await provider.summarize(article);
+    log('summarize', `[${i + 1}/${articles.length}] done`);
+    result.push({ ...article, translatedTitle: title, summary });
   }
 
   return result;
