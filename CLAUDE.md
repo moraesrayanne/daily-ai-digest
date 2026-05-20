@@ -4,7 +4,8 @@
 
 - **Never push directly to `main`.**
 - For every change requested by the user: create a branch, commit, and open a PR.
-- Branch naming: `claude/<short-description>` (e.g. `claude/skip-summarize-dryrun`)
+- Branch naming: `<type>/<short-description>` (e.g. `feat/skip-summarize-dryrun`, `fix/env-validation`, `chore/update-deps`)
+- Types mirror Conventional Commits: `feat`, `fix`, `chore`, `refactor`, `test`, `docs`, `ci`
 - Wait for the user to review and merge the PR before moving on.
 
 ## Commit Convention
